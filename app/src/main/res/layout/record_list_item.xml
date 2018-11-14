@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/record_name_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginTop="@dimen/record_list_item_vertical_margin"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/title_text_size"
+        />
+
+    <TextView
+        android:id="@+id/record_date_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/record_button"
+        android:layout_below="@+id/record_name_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/recording_time_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/record_button"
+        android:layout_below="@+id/record_date_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/record_size_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/recording_time_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/image_count_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/record_size_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/progress_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/record_list_item_horizontal_margin"
+        android:layout_marginEnd="@dimen/record_list_item_horizontal_margin"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="@dimen/record_list_item_vertical_margin"
+        android:layout_below="@+id/image_count_text_view"
+        android:textStyle="bold"
+        android:text="@string/record_progress_in_progress"
+        android:textColor="@color/in_progress_green"
+        />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/more_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+        android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:src="@mipmap/more_options"
+        android:clickable="true" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/record_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+        android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@+id/more_button"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:src="@mipmap/record_icon"
+        android:clickable="true"
+        android:visibility="invisible"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/upload_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+        android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@+id/more_button"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:src="@mipmap/upload_icon"
+        android:clickable="true" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/delete_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+        android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@+id/more_button"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:src="@mipmap/delete_icon"
+        android:clickable="true"
+        android:visibility="invisible" />
+
+</RelativeLayout>

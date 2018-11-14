@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.onsite.onsitefaulttracker">
+
+    <!-- Accessing camera hardware -->
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+
+    <application
+        android:name=".OnsiteApplication"
+        android:clearTaskOnLaunch="true"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Onsite Fault Tracker"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="ec768a10934651d64676419053063876e832a3cf"
+            />
+
+        <activity
+            android:name="com.dropbox.client2.android.AuthActivity"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:configChanges="orientation|keyboard">
+            <intent-filter>
+                <!-- Change this to be db- followed by your app key -->
+                <data android:scheme="db-u4glxfvcqqio2cn" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".activity.home.HomeActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".activity.settings.SettingsActivity"
+                  android:theme="@style/AppTheme.NoActionBar"
+                  android:screenOrientation="portrait"/>
+
+        <activity android:name=".activity.record.RecordActivity"
+                  android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity android:name=".activity.submit.SubmitActivity"
+                  android:theme="@style/AppTheme.NoActionBar"
+                  android:screenOrientation="portrait"/>
+
+        <activity android:name=".activity.previous.PreviousRecordsActivity"
+                  android:theme="@style/AppTheme.NoActionBar"
+                  android:screenOrientation="portrait"/>
+
+    </application>
+
+</manifest>

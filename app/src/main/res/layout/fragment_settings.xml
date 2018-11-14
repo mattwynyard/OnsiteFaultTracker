@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="@dimen/common_fragment_top_padding">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/settings_layout_top_margin"
+        android:layout_above="@+id/required_storage_text_view">
+
+    <LinearLayout
+        android:id="@+id/settings_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:id="@+id/camera_id_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_text_item_height">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/setting_item_horizontal_padding"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/text_dark"
+                android:text="@string/settings_camera_id_title"
+                />
+
+            <TextView
+                android:id="@+id/camera_id_edit_text"
+                android:layout_width="@dimen/settings_text_view_width"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/setting_item_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="@string/tap_camera_id"
+                />
+
+            <View
+                android:id="@+id/camera_id_bottom_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+                android:background="@color/divider_color"
+                android:layout_alignParentBottom="true" />
+
+        </RelativeLayout>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/frequency_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/image_size_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/recording_hours_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/exposure_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/focus_distance_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <include layout="@layout/setting_item_layout"
+            android:id="@+id/frame_duration_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height"/>
+
+        <!--
+        <RelativeLayout
+            android:id="@+id/frequency_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/setting_item_horizontal_padding"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/text_dark"
+                android:text="@string/setting_frequency_title"
+                />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:paddingStart="@dimen/setting_item_horizontal_padding">
+
+                <Space
+                    android:id="@+id/center_horz_space"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:layout_centerHorizontal="true"/>
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/frequency_minus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/center_horz_space"
+                    android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/minus"
+                    android:clickable="true" />
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/frequency_plus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@+id/center_horz_space"
+                    android:layout_marginStart="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/plus"
+                    android:clickable="true" />
+
+                <SeekBar
+                    android:id="@+id/frequency_seek_bar"
+                    android:layout_width="@dimen/setting_seek_bar_width"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_below="@+id/frequency_plus_button"/>
+
+                <TextView
+                    android:id="@+id/frequency_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/frequency_seek_bar"
+                    android:layout_centerHorizontal="true"
+                    android:textColor="@color/text_dark"
+                    android:text="seconds"/>
+
+            </RelativeLayout>
+
+            <View
+                android:id="@+id/frequency_bottom_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+                android:background="@color/divider_color"
+                android:layout_alignParentBottom="true" />
+
+        </RelativeLayout>
+        -->
+
+        <!--
+        <RelativeLayout
+            android:id="@+id/image_size_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/setting_item_horizontal_padding"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/text_dark"
+                android:text="@string/setting_image_size_title"
+                />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:paddingStart="@dimen/setting_item_horizontal_padding">
+
+                <Space
+                    android:id="@+id/image_size_center_horz_space"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:layout_centerHorizontal="true"/>
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/image_size_minus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/image_size_center_horz_space"
+                    android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/minus"
+                    android:clickable="true" />
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/image_size_plus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@+id/image_size_center_horz_space"
+                    android:layout_marginStart="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/plus"
+                    android:clickable="true" />
+
+                <SeekBar
+                    android:id="@+id/image_size_seek_bar"
+                    android:layout_width="@dimen/setting_seek_bar_width"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/image_size_plus_button"
+                    android:layout_centerHorizontal="true"/>
+
+                <TextView
+                    android:id="@+id/image_size_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/image_size_seek_bar"
+                    android:layout_centerHorizontal="true"
+                    android:textColor="@color/text_dark"
+                    android:text="KB"/>
+
+            </RelativeLayout>
+
+            <View
+                android:id="@+id/image_size_bottom_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+                android:background="@color/divider_color"
+                android:layout_alignParentBottom="true" />
+
+        </RelativeLayout>
+        -->
+
+        <!--
+        <RelativeLayout
+            android:id="@+id/recording_hours_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/setting_item_horizontal_padding"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/text_dark"
+                android:text="@string/setting_recording_hours_title"
+                />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:paddingStart="@dimen/setting_item_horizontal_padding">
+
+                <Space
+                    android:id="@+id/recording_hours_center_horz_space"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:layout_centerHorizontal="true"/>
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/recording_hours_minus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/recording_hours_center_horz_space"
+                    android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/minus"
+                    android:clickable="true" />
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/recording_hours_plus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@+id/recording_hours_center_horz_space"
+                    android:layout_marginStart="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/plus"
+                    android:clickable="true" />
+
+                <SeekBar
+                    android:id="@+id/recording_hours_seek_bar"
+                    android:layout_width="@dimen/setting_seek_bar_width"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/recording_hours_plus_button"
+                    android:layout_centerHorizontal="true"/>
+
+                <TextView
+                    android:id="@+id/recording_hours_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/recording_hours_seek_bar"
+                    android:layout_centerHorizontal="true"
+                    android:textColor="@color/text_dark"
+                    android:text="hours"/>
+
+            </RelativeLayout>
+
+            <View
+                android:id="@+id/recording_hours_bottom_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+                android:background="@color/divider_color"
+                android:layout_alignParentBottom="true" />
+
+        </RelativeLayout>
+
+-->
+
+        <!--
+        <RelativeLayout
+            android:id="@+id/exposure_setting_layout"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/setting_item_horizontal_padding"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:textColor="@color/text_dark"
+                android:text="@string/setting_exposure_title"
+                />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:paddingEnd="@dimen/setting_item_horizontal_padding"
+                android:paddingStart="@dimen/setting_item_horizontal_padding">
+
+                <Space
+                    android:id="@+id/exposure_center_horz_space"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:layout_centerHorizontal="true"/>
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/exposure_minus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/exposure_center_horz_space"
+                    android:layout_marginEnd="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/minus"
+                    android:clickable="true" />
+
+                <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/exposure_plus_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toEndOf="@+id/exposure_center_horz_space"
+                    android:layout_marginStart="@dimen/setting_fab_buttons_horizontal_margin"
+                    android:layout_marginBottom="@dimen/setting_fab_buttons_bottom_margin"
+                    android:scaleX="0.7"
+                    android:scaleY="0.7"
+                    android:src="@mipmap/plus"
+                    android:clickable="true" />
+
+                <SeekBar
+                    android:id="@+id/exposure_seek_bar"
+                    android:layout_width="@dimen/setting_seek_bar_width"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/exposure_plus_button"
+                    android:layout_centerHorizontal="true"/>
+
+                <TextView
+                    android:id="@+id/exposure_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/exposure_seek_bar"
+                    android:layout_centerHorizontal="true"
+                    android:textColor="@color/text_dark"
+                    android:text=""/>
+
+            </RelativeLayout>
+
+            <View
+                android:id="@+id/exposure_bottom_divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+                android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+                android:background="@color/divider_color"
+                android:layout_alignParentBottom="true" />
+
+        </RelativeLayout>
+
+-->
+    </LinearLayout>
+
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/required_storage_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/available_storage_text_view"
+        android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+        android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+        android:layout_marginTop="@dimen/setting_divider_vertical_padding"
+        android:layout_marginBottom="@dimen/setting_divider_vertical_padding"
+        android:textColor="@color/text_dark"/>
+
+    <TextView
+        android:id="@+id/available_storage_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/restore_defaults_button"
+        android:layout_marginStart="@dimen/setting_divider_horizontal_padding"
+        android:layout_marginEnd="@dimen/setting_divider_horizontal_padding"
+        android:layout_marginBottom="@dimen/setting_divider_vertical_padding"
+        android:textColor="@color/text_dark"/>
+    
+    <Button
+        android:id="@+id/restore_defaults_button"
+        android:layout_width="@dimen/home_button_width"
+        android:layout_height="@dimen/home_button_height"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        android:text="@string/settings_restore_defaults"
+        android:textColor="@color/text_light"
+        android:paddingStart="@dimen/home_button_left_adjustment"
+        android:textSize="@dimen/button_text_size"
+        android:background="@drawable/orange_button_selector"
+        />
+
+</RelativeLayout>

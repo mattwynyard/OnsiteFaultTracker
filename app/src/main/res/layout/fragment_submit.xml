@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="@dimen/common_fragment_top_padding"
+    android:paddingBottom="@dimen/activity_horizontal_margin"
+    android:keepScreenOn="true">
+
+    <TextView
+        android:id="@+id/record_name_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="@dimen/submit_name_top_margin"
+        android:textStyle="bold"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/title_text_size"
+        />
+
+    <TextView
+        android:id="@+id/record_creation_date_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/submit_date_top_margin"
+        android:layout_below="@+id/record_name_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/total_size_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/submit_date_top_margin"
+        android:layout_below="@+id/record_creation_date_text_view"
+        android:textColor="@color/text_dark"
+        />
+
+    <TextView
+        android:id="@+id/remaining_size_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/submit_name_top_margin"
+        android:layout_below="@+id/total_size_text_view"
+        android:textStyle="bold"
+        android:textColor="@color/submit_blue"
+        />
+
+    <TextView
+        android:id="@+id/uploaded_percentage_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="@dimen/submit_name_top_margin"
+        android:layout_below="@+id/remaining_size_text_view"
+        android:textColor="@color/light_orange"
+        android:textSize="@dimen/giant_text_size"
+        android:visibility="invisible"
+        />
+
+    <TextView
+        android:id="@+id/record_submitted_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:gravity="center_horizontal"
+        android:textStyle="bold"
+        android:textColor="@color/light_orange"
+        android:textSize="@dimen/large_text_size"
+        android:text="@string/zip_complete"
+        android:visibility="invisible"
+        />
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/uploaded_percentage_text_view"
+        android:layout_above="@+id/submit_record_button"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        >
+
+        <ImageView
+            android:id="@+id/current_image_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/submit_current_image_view_horizontal_margin"
+            android:layout_marginRight="@dimen/submit_current_image_view_horizontal_margin"
+            android:background="@android:color/transparent"
+            android:visibility="invisible"
+            />
+
+        <ProgressBar
+            android:id="@+id/submitting_progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:visibility="invisible" />
+
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/submit_record_button"
+        android:layout_width="@dimen/home_button_width"
+        android:layout_height="@dimen/home_button_height"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:text="@string/zip_record"
+        android:textColor="@color/text_light"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        android:background="@drawable/blue_button_selector"
+        android:paddingLeft="@dimen/home_button_left_adjustment"
+        android:textSize="@dimen/button_text_size"
+        android:enabled="true"
+        />
+
+</RelativeLayout>

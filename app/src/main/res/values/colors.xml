@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#BBBB00</color>
+    <color name="colorPrimaryDark">#201C1B</color>
+    <color name="colorAccent">#D8702F</color>
+
+    <color name="in_progress_green">#00DD00</color>
+    <color name="ready_to_submit_blue">#0000DD</color>
+    <color name="finalized_red">#DD0000</color>
+    <color name="submit_blue">#0000FF</color>
+    <color name="record_red">#FF0000</color>
+    <color name="light_orange">#E8A07F</color>
+    <color name="light_blue">#7FA0E8</color>
+
+    <!-- Button Colors -->
+    <color name="orange_button">#D8702F</color>
+    <color name="orange_button_selected">#E8A07F</color>
+    <color name="orange_button_disabled">#EDAD8F</color>
+    <color name="yellow_button">#BBBB00</color>
+    <color name="yellow_button_selected">#DDDD77</color>
+    <color name="yellow_button_disabled">#DDDD99</color>
+    <color name="blue_button">#2F70D8</color>
+    <color name="blue_button_selected">#7FA0E8</color>
+    <color name="blue_button_disabled">#8FADED</color>
+
+    <color name="divider_color">#D0D0D0</color>
+
+    <color name="text_light">#FAFAFA</color>
+    <color name="text_dark">#202020</color>
+
+    <color name="transparent">#00000000</color>
+
+    <!-- storage space condition colors -->
+    <color name="good_storage">@color/text_dark</color>
+    <color name="low_storage">#bbbb00</color>
+    <color name="no_storage">#ff0000</color>
+
+</resources>
