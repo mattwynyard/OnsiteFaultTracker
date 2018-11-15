@@ -51,7 +51,7 @@ public class TcpConnection implements Runnable {
     // Shared instance of TCP connection
     private static TcpConnection sharedInstance;
 
-    public static final int TIMEOUT=1000;
+    private static final int TIMEOUT=1000;
     private String connectionStatus=null;
     private Handler mHandler;
     private ServerSocket server=null;
@@ -60,8 +60,8 @@ public class TcpConnection implements Runnable {
     private Socket socket=null;
     //DataOutputStream out = null;
     private String line="";
-    BufferedReader socketIn;
-    PrintWriter socketOut;
+    private BufferedReader socketIn;
+    private PrintWriter socketOut;
     private boolean mStarted;
     private boolean mRecording;
     private Thread mTcpThread;
@@ -116,7 +116,7 @@ public class TcpConnection implements Runnable {
     /**
      * Stop the tcp connection
      */
-    public void stopTcpConnection() {
+    private void stopTcpConnection() {
         if (!mStarted) {
             return;
         }
@@ -124,8 +124,8 @@ public class TcpConnection implements Runnable {
         if (mTcpThread != null) {
             try {
                 mTcpThread.join();
-            } catch (InterruptedException ex) {
-
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
         mTcpThread = null;
@@ -221,7 +221,7 @@ public class TcpConnection implements Runnable {
 //    }
 //
 
-    public void sendMemoryStatus() {
+    private void sendMemoryStatus() {
 
         long availableSpace = CalculationUtil.sharedInstance().getAvailableStorageSpaceKB();
         long calculateNeededSpaceKB = CalculationUtil.sharedInstance().calculateNeededSpaceKB();
@@ -237,7 +237,7 @@ public class TcpConnection implements Runnable {
 
     private void sendBatteryStatus() {
         float currentBatteryLevel = BatteryUtil.sharedInstance().getBatteryLevel();
-        int batteryLevel = (int)Math.round(currentBatteryLevel);
+        int batteryLevel = Math.round(currentBatteryLevel);
         if (TcpConnection.getSharedInstance().isConnected()) {
             String msg = "B: " + Integer.toString(batteryLevel) + "%";
             TcpConnection.getSharedInstance().sendMessage(msg);
@@ -258,7 +258,7 @@ public class TcpConnection implements Runnable {
      * @param hex
      * @return
      */
-    public static byte[] int32toBytes(int hex) {
+    private static byte[] int32toBytes(int hex) {
         byte[] b = new byte[4];
         b[3] = (byte) ((hex & 0xFF000000) >> 24);
         b[2] = (byte) ((hex & 0x00FF0000) >> 16);
@@ -280,8 +280,13 @@ public class TcpConnection implements Runnable {
             if (!DEBUG) {
                 ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
                 WifiManager wm = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                WifiInfo connectionInfo = null;
+                try {
+                    connectionInfo = wm.getConnectionInfo();
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
 
-                WifiInfo connectionInfo = wm.getConnectionInfo();
                 int ipAddress = connectionInfo.getIpAddress();
                 byte[] bytes = int32toBytes(ipAddress);
 
@@ -362,8 +367,8 @@ public class TcpConnection implements Runnable {
         public void run() {
             // TODO Auto-generated method stub
             try {
-                Log.e(TAG, "Reading from server");
-                socketIn=new BufferedReader(new InputStreamReader(client.getInputStream()));
+                Log.e(TAG, "Reading from client");
+                socketIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
                 while ((line = socketIn.readLine()) != null) {
                     Log.d("ServerActivity", line);
                     //Do something with line
@@ -391,7 +396,7 @@ public class TcpConnection implements Runnable {
     /**
      * Close the socket connection if open and restart listening for a connection
      */
-    public void closeAll() {
+    private void closeAll() {
         // TODO Auto-generated method stub
         try {
             BusNotificationUtil.sharedInstance().postNotification(new UsbDisconnectedNotification());

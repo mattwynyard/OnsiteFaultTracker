@@ -36,8 +36,11 @@ import com.onsite.onsitefaulttracker.connectivity.TcpConnection;
 import com.onsite.onsitefaulttracker.model.Record;
 import com.onsite.onsitefaulttracker.model.notifcation_events.UsbConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.UsbDisconnectedNotification;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTNotConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStartRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.util.BatteryUtil;
 import com.onsite.onsitefaulttracker.util.BusNotificationUtil;
 import com.onsite.onsitefaulttracker.util.RecordUtil;
@@ -346,13 +349,20 @@ public class HomeFragment extends BaseFragment {
         mSubmitRecordButton.setEnabled(hasCurrentRecord);
         mPreviousRecordsButton.setEnabled(hasRecords);
 
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            mConnectionStatusTextView.setText(getString(R.string.connected));
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            mConnectionStatusTextView.setText(getString(R.string.connected));
+//        } else {
+//            mConnectionStatusTextView.setText(getString(R.string.not_connected));
+//        }
+        if (BLTManager.sharedInstance().getState() == 3) {
+            mConnectionStatusTextView.setText(getString(R.string.BTconnected));
+        } else if (BLTManager.sharedInstance().getState() == 2) {
+            mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
+        } else if (BLTManager.sharedInstance().getState() == 1){
+            mConnectionStatusTextView.setText(getString(R.string.BTlistening));
         } else {
-            mConnectionStatusTextView.setText(getString(R.string.not_connected));
-        }
-
-        updateCurrentRecordText();
+            mConnectionStatusTextView.setText(getString(R.string.BTnotConnected));
+}       updateCurrentRecordText();
     }
 
     /**
@@ -430,18 +440,16 @@ public class HomeFragment extends BaseFragment {
      * Action when the user clicks
      */
     private void onNewRecordClicked() {
-        if (requestStoragePermission()) {
+        if (requestStoragePermission()) { //storage permission false
             TcpConnection.getSharedInstance().sendMessage("M: No storage permission");
+            BLTManager.sharedInstance().sendMessage("M: No storage permission");
             return;
         }
 
         if (TcpConnection.getSharedInstance().isConnected()) {
-            //if (BatteryUtil.sharedInstance().isChargerConnected()) {
             checkForExistingRecords();
-            //} else {
-                //TcpConnection.getSharedInstance().sendMessage("Warning: The charger is not connected!");
-                //checkForExistingRecords();
-            //}
+        } else if ((BLTManager.sharedInstance().getState() == 3)) {
+            checkForExistingRecords();
         } else {
             if (TextUtils.isEmpty(SettingsUtil.sharedInstance().getCameraId())) {
                 new AlertDialog.Builder(getActivity())
@@ -477,7 +485,6 @@ public class HomeFragment extends BaseFragment {
             }
         }
     }
-
     /**
      * Action when user clicks on continue button, continue recording the current record
      */
@@ -485,6 +492,13 @@ public class HomeFragment extends BaseFragment {
         if (TcpConnection.getSharedInstance().isConnected()) {
             if (!BatteryUtil.sharedInstance().isChargerConnected()) {
                 TcpConnection.getSharedInstance().sendMessage("B: Not charging");
+            }
+            if (mListener != null) {
+                mListener.onNewRecord();
+            }
+        } else if (BLTManager.sharedInstance().getState() == 3) {
+            if (!BatteryUtil.sharedInstance().isChargerConnected()) {
+                BLTManager.sharedInstance().sendMessage("B: Not charging");
             }
             if (mListener != null) {
                 mListener.onNewRecord();
@@ -510,9 +524,7 @@ public class HomeFragment extends BaseFragment {
                         .show();
             }
         }
-
     }
-
     /**
      * Action when the user clicks on the submit button
      */
@@ -528,6 +540,14 @@ public class HomeFragment extends BaseFragment {
      */
     private void checkForExistingRecords() {
         if (TcpConnection.getSharedInstance().isConnected()) {
+            if (RecordUtil.sharedInstance().checkRecordExistsForToday()) {
+                if (mListener != null) {
+                    mListener.onNewRecord();
+                }
+            } else {
+                requestRecordName();
+            }
+        } else if (BLTManager.sharedInstance().getState() == 3) {
             if (RecordUtil.sharedInstance().checkRecordExistsForToday()) {
                 if (mListener != null) {
                     mListener.onNewRecord();
@@ -696,6 +716,28 @@ public class HomeFragment extends BaseFragment {
     // **********************************************************
     //  Notifications
     // **********************************************************
+    /**
+     * Notification when bluetooth is connected
+     *
+     * @param event
+     */
+    @Subscribe
+    public void onBLTConnectedEvent(BLTConnectedNotification event) {
+        // Set connection status text to connected
+        mConnectionStatusTextView.setText(getString(R.string.BTconnected));
+    }
+
+    /**
+     * Notification when bluetooth is connected
+     *
+     * @param event
+     */
+    @Subscribe
+    public void onBLTNotConnectedEvent(BLTNotConnectedNotification event) {
+        // Set connection status text to connected
+        mConnectionStatusTextView.setText(getString(R.string.BTnotConnected));
+    }
+
     /**
      * Event from when user elects to pause recording
      *

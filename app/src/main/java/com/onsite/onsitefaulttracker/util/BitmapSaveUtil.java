@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.util.Log;
 
+import com.onsite.onsitefaulttracker.connectivity.BLTManager;
 import com.onsite.onsitefaulttracker.connectivity.TcpConnection;
 import com.onsite.onsitefaulttracker.model.Record;
 
@@ -124,7 +125,7 @@ public class BitmapSaveUtil {
             @Override
             public void run() {
                 String path = RecordUtil.sharedInstance().getPathForRecord(record);
-                OutputStream fOutputStream = null;
+                OutputStream fOutputStream;
                 File folder = new File(path);
                 if (!folder.exists()) {
                     Log.e(TAG, "Error saving snap, Record path does not exist");
@@ -158,7 +159,11 @@ public class BitmapSaveUtil {
                     fOutputStream.close();
 
                     //send photo name to client
-                    TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
+                    //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
+                    if (BLTManager.sharedInstance().getState() == 3) {
+                        BLTManager.sharedInstance().sendMessage(filename + ".jpg");
+                    }
+
 
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();

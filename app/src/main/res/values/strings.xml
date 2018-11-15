@@ -14,6 +14,10 @@
     <string name="no_current_record">No Current Record</string>
     <string name="not_connected">Usb connection not initialized</string>
     <string name="connected">Usb connected</string>
+    <string name="BTconnected">Bluetooth connected</string>
+    <string name="BTconnecting">Bluetooth waiting for connection</string>
+    <string name="BTlistening">Bluetooth listening</string>
+    <string name="BTnotConnected">Bluetooth not connected</string>
 
     <string name="charger_not_connected_title">Warning</string>
     <string name="charger_not_connected_message">The charger is not connected, it is highly recommended you connect the charger before continuing</string>
@@ -75,7 +79,7 @@
     <string name="record_no_disk_space_title">Error</string>
     <string name="record_no_disk_space_message">There is not enough available space to continue recording.  Please clear up some space then continue recording.</string>
     <string name="record_error_title">Error</string>
-    <string name="record_error_message">An error has prevented frame recording.  Click Continue on the home screen to start again.  If that doesnt work try turning off and on your device.  If still no luck please contact support.</string>
+    <string name="record_error_message">An error has prevented frame recording.  Click Continue on the home screen to start again.  If that doesn't work try turning off and on your device.  If still no luck please contact support.</string>
 
     <!-- Previous Records Strings -->
     <string name="record_progress_in_progress">IN PROGRESS</string>

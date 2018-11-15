@@ -188,7 +188,8 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         }
         // Register to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().register(this);
-        TcpConnection.getSharedInstance().sendMessage("C: RESUMED");
+        BLTManager.sharedInstance().sendMessage("C: RESUMED");
+        //TcpConnection.getSharedInstance().sendMessage("C: RESUMED");
     }
     /**
      * Called when the fragment is paused,
@@ -208,7 +209,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 
         // Unregister to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
-        TcpConnection.getSharedInstance().sendMessage("C: PAUSED");
+        //TcpConnection.getSharedInstance().sendMessage("C: PAUSED");
     }
 
     /**
@@ -274,12 +275,20 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 float currentBatteryLevel = BatteryUtil.sharedInstance().getBatteryLevel();
                 //TODO fix where battery message is sent from
                 if (TcpConnection.getSharedInstance().isConnected()) {
-                    int batteryLevel = (int)Math.round(currentBatteryLevel);
+                    int batteryLevel = Math.round(currentBatteryLevel);
                     String msg = "B: " + Integer.toString(batteryLevel) + "%";
                     TcpConnection.getSharedInstance().sendMessage(msg);
                     if (!TcpConnection.getSharedInstance().isConnected()) {
                         TcpConnection.getSharedInstance().sendMessage("B: not charging!");
                     }
+                }
+                if (BLTManager.sharedInstance().getState() == 3) { //STATE_CONNECTED
+                    int batteryLevel = Math.round(currentBatteryLevel);
+                    String msg = "B: " + Integer.toString(batteryLevel) + "%";
+                    BLTManager.sharedInstance().sendMessage(msg);
+//                    if (!TcpConnection.getSharedInstance().isConnected()) {
+//                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
+//                    }
                 }
                 if (currentBatteryLevel <= LOW_BATTERY_ALARM_LEVEL) {
                     if (!mDisplayedLowBatteryError) {
@@ -309,7 +318,10 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     private void onRecordingError() {
         stopRecording();
         if (TcpConnection.getSharedInstance().isConnected()) {
-            TcpConnection.getSharedInstance().sendMessage("RECORDING_ERROR");
+            TcpConnection.getSharedInstance().sendMessage("E: RECORDING_ERROR");
+        }
+        if (BLTManager.sharedInstance().getState() == 3) {
+            BLTManager.sharedInstance().sendMessage("E: RECORDING_ERROR");
         }
 
         Log.e(TAG, "*******************************************************");
@@ -345,6 +357,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         stopRecording();
         if (TcpConnection.getSharedInstance().isConnected()) {
             TcpConnection.getSharedInstance().sendMessage("M: OUT OF DISK SPACE");
+        }
+        if (BLTManager.sharedInstance().getState() == 3) {
+            BLTManager.sharedInstance().sendMessage("M: OUT OF DISK SPACE");
         }
 
         new AlertDialog.Builder(getActivity())
@@ -394,6 +409,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         if (TcpConnection.getSharedInstance().isConnected()) {
             TcpConnection.getSharedInstance().sendMessage("M: LOW DISK SPACE");
         }
+        if (BLTManager.sharedInstance().getState() == 3) {
+            BLTManager.sharedInstance().sendMessage("M: LOW DISK SPACE");
+        }
 
         new AlertDialog.Builder(getActivity())
                 .setTitle(getString(R.string.record_low_disk_space_dialog_title))
@@ -414,6 +432,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     private void displayLowBatteryError() {
         if (TcpConnection.getSharedInstance().isConnected()) {
             TcpConnection.getSharedInstance().sendMessage("LOW_BATTERY");
+        }
+        if (BLTManager.sharedInstance().getState() == 3) {
+            BLTManager.sharedInstance().sendMessage("B: LOW_BATTERY");
         }
 
         new AlertDialog.Builder(getActivity())

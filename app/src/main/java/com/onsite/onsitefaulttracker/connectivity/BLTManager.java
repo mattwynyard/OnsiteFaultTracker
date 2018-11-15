@@ -17,7 +17,12 @@ import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 
+import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTNotConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStartRecordingEvent;
+import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStopRecordingEvent;
+import com.onsite.onsitefaulttracker.model.notifcation_events.UsbDisconnectedNotification;
 import com.onsite.onsitefaulttracker.util.BusNotificationUtil;
 
 import java.io.BufferedReader;
@@ -48,6 +53,7 @@ public class BLTManager extends Activity {
     private static final UUID UUID_UNSECURE = UUID.fromString("00030000-0000-1000-8000-00805F9B34FB");
     private static final String NAME = "OnsiteBluetoothserver";
     private int mState;
+    final Object lock = new Object();
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -63,7 +69,9 @@ public class BLTManager extends Activity {
     private BluetoothDevice mBluetoothDevice;
     //private BluetoothServerSocket mServerSocket;
     private BluetoothSocket mSocket;
-    private AcceptThread mSecureAcceptThread;
+    private AcceptThread mAcceptThread;
+    private Thread mRestartThread;
+    private InputStream in;
     // Enable Bluetooth Request Id
     private static final int REQUEST_BLUETOOTH_ENABLE_FOR_SEND = 4;
     private static final int REQUEST_ENABLE_BT = 1;
@@ -112,9 +120,6 @@ public class BLTManager extends Activity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mBluetoothAdapter.setName(BLUETOOTH_ADAPTER_NAME);
         mState = STATE_NONE;
-        //TelephonyManager tManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
-        //String uuid = tManager.getDeviceId();
-
     }
 
     /**
@@ -142,6 +147,11 @@ public class BLTManager extends Activity {
     private synchronized void setState(int state) {
         Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
+
+    }
+
+    private void startBLTConnection() {
+        start();
     }
 
     /**
@@ -151,29 +161,41 @@ public class BLTManager extends Activity {
     public synchronized void start() {
         Log.d(TAG, "start");
 
-        // Cancel any thread attempting to make a connection
-//        if (mConnectThread != null) {
-//            mConnectThread.cancel();
-//            mConnectThread = null;
-//        }
-//
-//        // Cancel any thread currently running a connection
-//        if (mConnectedThread != null) {
-//            mConnectedThread.cancel();
-//            mConnectedThread = null;
-//        }
-
-        setState(STATE_LISTEN);
-
-        // Start the thread to listen on a BluetoothServerSocket
-        if (mSecureAcceptThread == null) {
-            mSecureAcceptThread = new AcceptThread(false);
-            mSecureAcceptThread.start();
+         //Cancel any thread attempting to make a connection
+        if (mAcceptThread != null) {
+            mAcceptThread.cancel();
+            mAcceptThread = null;
         }
-//        if (mInsecureAcceptThread == null) {
-//            mInsecureAcceptThread = new AcceptThread(false);
-//            mInsecureAcceptThread.start();
-//        }
+        // Cancel any thread currently running a connection
+        if (mReadThread != null) {
+            try {
+                mReadThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            mReadThread = null;
+        }
+        // Start the thread to listen on a BluetoothServerSocket
+        if (mAcceptThread == null) {
+            mAcceptThread = new AcceptThread(false);
+            mAcceptThread.start();
+            setState(STATE_CONNECTING);
+        }
+    }
+
+    /**
+     * Send the recording status
+     */
+    public void sendMessage(final String message) {
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                if ( mWriterOut != null) {
+                    mWriterOut.println(message);
+                    mWriterOut.flush();
+                }
+            }
+        });
     }
 
     /**
@@ -213,7 +235,6 @@ public class BLTManager extends Activity {
         public void onReceive(Context context, Intent intent) {
             Log.i(TAG, "onResumeCalled");
             String action = intent.getAction();
-
             // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -225,10 +246,6 @@ public class BLTManager extends Activity {
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                 Log.i(TAG, "onResume: Discovery Finished");
             }
-//            if (BluetoothAdapter.STATE_ON.equals(action)) {
-//                Log.i(TAG,"onResume: Discovery Started");
-//
-//            }
         }
     };
 
@@ -237,21 +254,17 @@ public class BLTManager extends Activity {
         private final BluetoothServerSocket mmServerSocket;
         private String mSocketType;
 
-
-
-        public AcceptThread(boolean secure) {
+        private AcceptThread(boolean secure) {
             // Use a temporary object that is later assigned to mmServerSocket
             // because mmServerSocket is final.
             BluetoothServerSocket tmp = null;
             mSocketType = secure ? "Secure" : "Insecure";
-
             // Create a new listening server socket
             try {
                 if (secure) {
                     tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME,
                             UUID_UNSECURE);
                 } else {
-                    //TODO fix up insecure connection
                     tmp = mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(
                             NAME, UUID_UNSECURE);
                 }
@@ -268,10 +281,11 @@ public class BLTManager extends Activity {
 
             // Keep listening until exception occurs or a socket is returned.
             while (mState != STATE_CONNECTED) {
-
                 try {
                     Log.i(TAG,  "Server socket listening");
                     mSocket = mmServerSocket.accept();
+                    setState(STATE_LISTEN);
+
                 } catch (IOException e) {
                     Log.e(TAG, "Socket's accept() method failed", e);
                     break;
@@ -280,14 +294,13 @@ public class BLTManager extends Activity {
                 if (mSocket != null) {
                     // A connection was accepted. Perform work associated with
                     // the connection in a separate thread.
-                    //manageMyConnectedSocket(socket);
                     Log.i(TAG, "Bluetooth socket accepted connection");
                     Log.i(TAG, "Connected to: " + mSocket.getRemoteDevice().getAddress());
-                    mState = STATE_CONNECTED;
+                    setState(STATE_CONNECTED);
+                    BusNotificationUtil.sharedInstance().postNotification(new BLTConnectedNotification());
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
                         mWriterOut.println("CONNECTED\n");
-                        mWriterOut.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -295,61 +308,87 @@ public class BLTManager extends Activity {
                     mReadThread = new Thread(readFromClient);
                     mReadThread.setPriority(Thread.MAX_PRIORITY);
                     mReadThread.start();
-//                    try {
-//                        mmServerSocket.close();
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                    break;
                 }
-
             }
         }
         // Closes the connect socket and causes the thread to finish.
         public void cancel() {
             try {
                 mmServerSocket.close();
+                mAcceptThread.join();
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Thread did not die", e);
+                e.printStackTrace();
+            }
+        }
+        /**
+         * Close the socket connection if open and restart listening for a connection
+         */
+        private void closeAll() {
+            try {
+                BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
+                Log.e(TAG, "Closing All");
+                setState(STATE_NONE);
+                BusNotificationUtil.sharedInstance().postNotification(new BLTNotConnectedNotification());
+                in.close();
+                in = null;
+                mSocket.close();
+                mmServerSocket.close();
+                mReadThread = null;
+                restartTcpConnection();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
         }
 
-        private Runnable readFromClient = new Runnable() {
+        /**
+         * Restarts listening for a socket connection
+         * after a one second wait
+         */
+        private void restartTcpConnection() {
+            ThreadUtil.executeOnMainThreadDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    startBLTConnection();
+                }
+            }, 1000);
+            Log.i(TAG, "Restarting connection");
+        }
+
+        private final Runnable readFromClient = new Runnable() {
             @Override
             public void run() {
-                byte[] buffer = new byte[1024];
-                int bytes;
-
+                byte[] buffer = new byte[128];
+                int length;
                 Log.i(TAG, "Read thread started");
                 try {
-                    InputStream in = mSocket.getInputStream();
-                    //mReaderIn = new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
-                    //while ((line = mReaderIn.readLine()) != null) {
-                    while ((bytes = in.read(buffer)) > 0) {
-                            String line = new String(buffer, 0, bytes);
-                            System.out.println(line);
-                            if (line.contains("Start")) {
-                                if (!mRecording) {
-                                    BusNotificationUtil.sharedInstance().postNotification(new BLTStartRecordingEvent());
-                                }
-                            } else if (line.contains("Stop")) {
-                                if (mRecording) {
-                                    BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
-                                }
+                    in = mSocket.getInputStream();
+                    while ((length = in.read(buffer)) != -1) {
+                        String line = new String(buffer, 0, length);
+                        System.out.println(line);
+                        if (line.contains("Start")) {
+                            if (!mRecording) {
+                                BusNotificationUtil.sharedInstance().postNotification(new BLTStartRecordingEvent());
                             }
+                        } else if (line.contains("Stop")) {
+                            if (mRecording) {
+                                BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
+                            }
+                        } else {
+                            System.out.println(line);
+                        }
                     }
-                    in.close();
-                    //closeAll();
-                    Log.e(TAG, "OUT OF WHILE");
-                }
-                catch (IOException e) {
-                    // TODO Auto-generated catch block
+                } catch (IOException e) {
                     e.printStackTrace();
+                } finally {
+                    setState(STATE_NONE);
+                    closeAll();
                 }
             }
-        };
-
+        }; //end closure
     } //end private class
-
 } //end class
 
