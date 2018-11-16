@@ -79,7 +79,7 @@
     <string name="record_no_disk_space_title">Error</string>
     <string name="record_no_disk_space_message">There is not enough available space to continue recording.  Please clear up some space then continue recording.</string>
     <string name="record_error_title">Error</string>
-    <string name="record_error_message">An error has prevented frame recording.  Click Continue on the home screen to start again.  If that doesn't work try turning off and on your device.  If still no luck please contact support.</string>
+    <string name="record_error_message">An error has prevented frame recording.  Click Continue on the home screen to start again.  If that doesnt work try turning off and on your device.  If still no luck please contact support.</string>
 
     <!-- Previous Records Strings -->
     <string name="record_progress_in_progress">IN PROGRESS</string>
