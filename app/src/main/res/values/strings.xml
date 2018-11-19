@@ -127,4 +127,7 @@
     <string name="content_desc_settings">Settings</string>
     <string name="content_desc_back">Back</string>
 
+    <string name="gps_network_not_enabled">GPS permissions not enabled</string>
+    <string name="open_location_settings">Open settings</string>
+
 </resources>

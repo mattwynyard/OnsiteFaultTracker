@@ -298,6 +298,7 @@ public class BLTManager extends Activity {
                     Log.i(TAG, "Connected to: " + mSocket.getRemoteDevice().getAddress());
                     setState(STATE_CONNECTED);
                     BusNotificationUtil.sharedInstance().postNotification(new BLTConnectedNotification());
+
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
                         mWriterOut.println("CONNECTED\n");
@@ -330,14 +331,13 @@ public class BLTManager extends Activity {
             try {
                 BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
                 Log.e(TAG, "Closing All");
-                setState(STATE_NONE);
                 BusNotificationUtil.sharedInstance().postNotification(new BLTNotConnectedNotification());
                 in.close();
                 in = null;
                 mSocket.close();
                 mmServerSocket.close();
                 mReadThread = null;
-                restartTcpConnection();
+                restartBLTConnection();
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -348,7 +348,7 @@ public class BLTManager extends Activity {
          * Restarts listening for a socket connection
          * after a one second wait
          */
-        private void restartTcpConnection() {
+        private void restartBLTConnection() {
             ThreadUtil.executeOnMainThreadDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -384,6 +384,7 @@ public class BLTManager extends Activity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
+                    BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
                     setState(STATE_NONE);
                     closeAll();
                 }

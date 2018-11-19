@@ -43,6 +43,7 @@ import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingE
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.util.BatteryUtil;
 import com.onsite.onsitefaulttracker.util.BusNotificationUtil;
+import com.onsite.onsitefaulttracker.util.GPSUtil;
 import com.onsite.onsitefaulttracker.util.RecordUtil;
 import com.onsite.onsitefaulttracker.util.SettingsUtil;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
@@ -206,9 +207,7 @@ public class HomeFragment extends BaseFragment {
            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
        }
-
    }
-
     //TODO Temp hack should be moved to BLTManager
     public void startAdvertising() {
         if (BLTManager.sharedInstance().isBluetoothEnabled()) {
@@ -445,7 +444,6 @@ public class HomeFragment extends BaseFragment {
             BLTManager.sharedInstance().sendMessage("M: No storage permission");
             return;
         }
-
         if (TcpConnection.getSharedInstance().isConnected()) {
             checkForExistingRecords();
         } else if ((BLTManager.sharedInstance().getState() == 3)) {
@@ -592,10 +590,15 @@ public class HomeFragment extends BaseFragment {
             System.out.println(camera + "_" + todaysDisplayDate);
             createRecord(camera + "_" + todaysDisplayDate);
             TcpConnection.getSharedInstance().sendMessage("Record created: " + camera + "_" + todaysDisplayDate);
-
+        } else if (BLTManager.sharedInstance().getState() == 3) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            final String todaysDisplayDate = dateFormat.format(new Date());
+            String camera = SettingsUtil.sharedInstance().getCameraId();
+            System.out.println(camera + "_" + todaysDisplayDate);
+            createRecord(camera + "_" + todaysDisplayDate);
+            BLTManager.sharedInstance().sendMessage("Record created: " + camera + "_" + todaysDisplayDate);
         } else {
             final RelativeLayout recordNameLayout = new RelativeLayout(getActivity());
-
             final EditText recordNameInput = new EditText(getActivity());
             recordNameInput.setHint(R.string.new_record_name_hint);
             RelativeLayout.LayoutParams recordNameParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -604,7 +607,6 @@ public class HomeFragment extends BaseFragment {
             recordNameInput.setLayoutParams(recordNameParams);
             recordNameInput.setSingleLine();
             recordNameLayout.addView(recordNameInput);
-
             SimpleDateFormat dateFormat = new SimpleDateFormat(DISPLAY_DATE_FORMAT);
             final String todaysDisplayDate = dateFormat.format(new Date());
 

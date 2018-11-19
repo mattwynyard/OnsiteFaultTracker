@@ -18,6 +18,7 @@ import com.onsite.onsitefaulttracker.util.CalculationUtil;
 import com.onsite.onsitefaulttracker.util.CameraUtil;
 import com.onsite.onsitefaulttracker.util.RecordUtil;
 import com.onsite.onsitefaulttracker.util.SettingsUtil;
+import com.onsite.onsitefaulttracker.util.GPSUtil;
 
 /**
  * Created by hihi on 6/6/2016.
@@ -50,13 +51,15 @@ public class OnsiteApplication extends Application {
         BLTManager.initialize(this);
         BusNotificationUtil.initialize(this);
         TcpConnection.initialize(this);
+        GPSUtil.initialize(this);
 
         Thread.setDefaultUncaughtExceptionHandler(
                 new Thread.UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread thread, Throwable e) {
                         System.out.println("AppCrash");
-                        TcpConnection.getSharedInstance().sendMessage("Crash");
+                        //TcpConnection.getSharedInstance().sendMessage("Crash");
+                        BLTManager.sharedInstance().sendMessage("Crash");
                         BusNotificationUtil.sharedInstance().postNotification(new TCPStopRecordingEvent());
                         //System.exit(1);
                     }

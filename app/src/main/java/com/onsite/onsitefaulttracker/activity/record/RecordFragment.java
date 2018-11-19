@@ -264,6 +264,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 }
                 mRecord.photoCount++;
                 updatePhotoCountText();
+                BLTManager.sharedInstance().sendMessage("M: OK");
             } else {
                 // There is not enough disk space to save any more photos,
                 // display an error and then close the fragment
@@ -601,6 +602,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     @Subscribe
     public void onBLTStopRecordingEvent(BLTStopRecordingEvent event) {
         Log.i(TAG, "Stop recording called from BLTEvent");
+        getActivity().onBackPressed();
         stopRecording();
     }
     /**
@@ -612,6 +614,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     public void onBLEStopRecordingEvent(BLEStopRecordingEvent event) {
         Log.i(TAG, "Stop recording called from BLEEvent");
         stopRecording();
+
     }
 
     /**
