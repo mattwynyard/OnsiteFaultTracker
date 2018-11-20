@@ -32,6 +32,7 @@ import com.onsite.onsitefaulttracker.util.BatteryUtil;
 import com.onsite.onsitefaulttracker.util.BitmapSaveUtil;
 import com.onsite.onsitefaulttracker.util.BusNotificationUtil;
 import com.onsite.onsitefaulttracker.util.CameraUtil;
+import com.onsite.onsitefaulttracker.util.GPSUtil;
 import com.onsite.onsitefaulttracker.util.RecordUtil;
 import com.onsite.onsitefaulttracker.util.SettingsUtil;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
@@ -232,6 +233,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     private void takeSnapshot() {
         // Verify if recording or not,  if not dont take a snap,
         // just returns
+        GPSUtil.sharedInstance().getLocation();
         if (!mRecording) {
             return;
         }

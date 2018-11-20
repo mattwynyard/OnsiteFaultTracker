@@ -20,6 +20,7 @@ import android.util.Log;
 import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTNotConnectedNotification;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTListeningNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStartRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStopRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.UsbDisconnectedNotification;
@@ -66,22 +67,13 @@ public class BLTManager extends Activity {
     // Application context
     private Application mApplicationContext;
     private BluetoothAdapter mBluetoothAdapter;
-    private BluetoothDevice mBluetoothDevice;
-    //private BluetoothServerSocket mServerSocket;
     private BluetoothSocket mSocket;
     private AcceptThread mAcceptThread;
-    private Thread mRestartThread;
     private InputStream in;
-    // Enable Bluetooth Request Id
-    private static final int REQUEST_BLUETOOTH_ENABLE_FOR_SEND = 4;
-    private static final int REQUEST_ENABLE_BT = 1;
 
-    private Activity mActivity;
     private boolean mRecording;
 
     private Thread mReadThread;
-    private BufferedReader mReaderIn;
-    private String line="";
     private PrintWriter mWriterOut;
 
     /**
@@ -113,6 +105,8 @@ public class BLTManager extends Activity {
      */
     private BLTManager(final Application applicationContext) {
         mApplicationContext = applicationContext;
+        setupBluetooth();
+        Log.i(TAG, "Bluetooth Setup");
     }
 
     public void setupBluetooth() {
@@ -260,6 +254,8 @@ public class BLTManager extends Activity {
             BluetoothServerSocket tmp = null;
             mSocketType = secure ? "Secure" : "Insecure";
             // Create a new listening server socket
+            Log.i(TAG, "NAME: " + NAME);
+            Log.i(TAG, "NAME: " + UUID_UNSECURE);
             try {
                 if (secure) {
                     tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME,
@@ -278,13 +274,14 @@ public class BLTManager extends Activity {
             Log.d(TAG, "Socket Type: " + mSocketType +
                     " BEGIN mAcceptThread" + this);
             setName("AcceptThread" + mSocketType);
-
+            BusNotificationUtil.sharedInstance().postNotification(new BLTListeningNotification());
             // Keep listening until exception occurs or a socket is returned.
             while (mState != STATE_CONNECTED) {
                 try {
                     Log.i(TAG,  "Server socket listening");
                     mSocket = mmServerSocket.accept();
                     setState(STATE_LISTEN);
+
 
                 } catch (IOException e) {
                     Log.e(TAG, "Socket's accept() method failed", e);
@@ -307,6 +304,7 @@ public class BLTManager extends Activity {
                     }
 
                     mReadThread = new Thread(readFromClient);
+                    mReadThread.setName("ReadThread");
                     mReadThread.setPriority(Thread.MAX_PRIORITY);
                     mReadThread.start();
                 }

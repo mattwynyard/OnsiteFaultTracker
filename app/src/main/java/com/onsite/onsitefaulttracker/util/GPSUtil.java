@@ -1,7 +1,9 @@
 package com.onsite.onsitefaulttracker.util;
 
 import android.Manifest;
+import android.app.Application;
 import android.content.Context;
+import android.location.Criteria;
 import android.os.Bundle;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,10 +15,12 @@ import android.content.DialogInterface;
 import java.lang.String;
 
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.app.AlertDialog;
 import android.provider.Settings;
 import com.onsite.onsitefaulttracker.R;
+import com.onsite.onsitefaulttracker.connectivity.BLTManager;
 
 
 public class GPSUtil implements LocationListener {
@@ -27,9 +31,11 @@ public class GPSUtil implements LocationListener {
     // The application context
     private Context mContext;
 
-    // The static instance of this class which will be initialized once then reused
-    // throughout the app
-    private static GPSUtil sGPSUtil;
+//    // The static instance of this class which will be initialized once then reused
+//    // throughout the app
+//    private static GPSUtil sGPSUtil;
+    // Shared Instance, to be initialized once and used throughout the application
+    private static GPSUtil sSharedInstance;
 
     // flag for GPS status
     public boolean isGPSEnabled = false;
@@ -43,18 +49,17 @@ public class GPSUtil implements LocationListener {
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 10 meters
 
     // The minimum time between updates in milliseconds
-    private static final long MIN_TIME_BW_UPDATES = 1; // 1 minute
+    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 minute
 
     public static final int PERMISSIONS_REQUEST_LOCATION = 10;
 
     /**
-     * initializes RecordUtil.
+     * initializes GPSUtil.
      *
-     * @param context
+     * @param context The application context
      */
     public static void initialize(final Context context) {
-
-        sGPSUtil = new GPSUtil(context);
+        sSharedInstance = new GPSUtil(context);
     }
 
     /**
@@ -63,10 +68,11 @@ public class GPSUtil implements LocationListener {
      * @return
      */
     public static GPSUtil sharedInstance() {
-        if (sGPSUtil != null) {
-            return sGPSUtil;
+        if (sSharedInstance != null) {
+            return sSharedInstance;
         } else {
-            throw new RuntimeException("RecordUtil must be initialized in the Application class before use");
+            throw new RuntimeException("GPSUtil must be initialized " +
+                    "in the Application class before use");
         }
     }
 
@@ -77,33 +83,46 @@ public class GPSUtil implements LocationListener {
      */
     private GPSUtil(final Context context) {
         mContext = context;
-        checkPermissions();
+        checkGPS();
     }
 
-    private void checkPermissions() {
-        LocationManager locationManager = (LocationManager)
+    public void checkGPS() {
+        mLocationManager = (LocationManager)
                 mContext.getSystemService(Context.LOCATION_SERVICE);
         // getting GPS status
-        isGPSEnabled = locationManager
+        isGPSEnabled = mLocationManager
                 .isProviderEnabled(LocationManager.GPS_PROVIDER);
 
         Log.v("isGPSEnabled", "=" + isGPSEnabled);
 
-        if (isGPSEnabled) {
-            mLocation = getLocation();
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setPowerRequirement(Criteria.POWER_HIGH);
+        criteria.setAltitudeRequired(false);
+        criteria.setSpeedRequired(false);
+        //criteria.setCostAllowed(true);
+        criteria.setBearingRequired(false);
+
+//API level 9 and up
+        criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+        criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+//        if (isGPSEnabled) {
+//            return true;
+//        } else {
+//            return false;
+//        }
+            //mLocation = getLocation();
             //showSettingsAlert();
         }
-    }
 
-
-    private Location getLocation() {
+    public Location getLocation() {
         Location location = null;
-        if (location == null) {
+        if (isGPSEnabled) {
             if (ActivityCompat.checkSelfPermission(mContext,
                     Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED &&
+                    == PackageManager.PERMISSION_GRANTED &&
                     ActivityCompat.checkSelfPermission(mContext,
-                            Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                            Manifest.permission.ACCESS_COARSE_LOCATION) ==
                             PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
@@ -123,48 +142,48 @@ public class GPSUtil implements LocationListener {
                     if (location != null) {
                         latitude = location.getLatitude();
                         longitude = location.getLongitude();
+                        Float accuracy = location.getAccuracy();
                         Log.d("Latitude", Double.toString(latitude));
                         Log.d("Longitude", Double.toString(longitude));
+                        Log.d("Accuracy", Double.toString(accuracy));
+                    } else {
+                        Log.d(TAG, "Location Null");
                     }
-
+                } else {
+                    Log.d(TAG, "Location Manager Null");
                 }
-//            } else {
-//                ActivityCompat.requestPermissions(Context,
-//                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-//                        PERMISSIONS_REQUEST_LOCATION);
-//            }
+
+            } else {
+                Log.d(TAG, "Permissions not granted");
 
             }
         }
         return location;
     }
 
-    public void showSettingsAlert() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(mContext);
-        dialog.setMessage(mContext.getResources().getString(R.string.gps_network_not_enabled));
-        dialog.setPositiveButton(mContext.getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                // TODO Auto-generated method stub
-                Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                mContext.startActivity(myIntent);
-                //get gps
-            }
-        });
-        dialog.setNegativeButton(mContext.getString(R.string.cancel), new DialogInterface.OnClickListener() {
-
-            @Override
-            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                // TODO Auto-generated method stub
-
-            }
-        });
-        dialog.show();
-        mLocation = getLocation();
-    }
-
     @Override
     public void onLocationChanged(Location location) {
+        if (ActivityCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(mContext,
+                        Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+            if (mLocationManager != null) {
+                //location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+//                if (location != null) {
+//                    latitude = location.getLatitude();
+//                    longitude = location.getLongitude();
+//                    Log.d("Latitude", Double.toString(latitude));
+//                    Log.d("Longitude", Double.toString(longitude));
+//                } else {
+//                    Log.d(TAG, "Location Null");
+//                }
+            } else {
+                Log.d(TAG, "Location Manager Null");
+            }
+        }
     }
 
     @Override

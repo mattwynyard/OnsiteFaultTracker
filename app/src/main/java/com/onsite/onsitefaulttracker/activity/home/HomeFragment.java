@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -37,6 +38,7 @@ import com.onsite.onsitefaulttracker.model.Record;
 import com.onsite.onsitefaulttracker.model.notifcation_events.UsbConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.UsbDisconnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTListeningNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTNotConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStartRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
@@ -110,11 +112,13 @@ public class HomeFragment extends BaseFragment {
     private TcpConnection mTcpConnection; // TODO:TEMPHACK TEST
 
 
-    private int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
-    private int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
+    private final int PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
+    private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
     private int REQUEST_ENABLE_DISCOVERY = 4;
     private int DISCOVERY_REQUEST = 5;
-    private static final int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_ENABLE_BT = 6;
+
+    private boolean mAdvertising = false;
 
 
 
@@ -173,9 +177,14 @@ public class HomeFragment extends BaseFragment {
             initAppVersionText();
             requestCameraPermission();
             requestStoragePermission();
-            runTcpConnection();
+            //runTcpConnection();
             requestLocationPermission();
-            setupBluetooth();
+            //setupBluetooth();
+            //checkGPSPermissions();
+            enableBluetooth();
+
+
+
         }
         return view;
     }
@@ -194,7 +203,7 @@ public class HomeFragment extends BaseFragment {
    }
    private void setupBluetooth() {
         BLTManager.sharedInstance().setupBluetooth();
-        enableBluetooth();
+
    }
     /**
      * Requests access to location information for SDK > 23
@@ -203,18 +212,35 @@ public class HomeFragment extends BaseFragment {
    private void requestLocationPermission() {
        if (Build.VERSION.SDK_INT >= 23) {
            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                   MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
+                   PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                   MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+                   PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
        }
    }
+
+//   private void checkGPSPermissions() {
+//       requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+//   }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // All good!
+                } else {
+                    Log.i(TAG, "Need location permission");
+                }
+                break;
+        }
+    }
     //TODO Temp hack should be moved to BLTManager
     public void startAdvertising() {
         if (BLTManager.sharedInstance().isBluetoothEnabled()) {
             Intent discoverableIntent =
                     new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-            startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISCOVERY);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1000);
+            startActivityForResult(discoverableIntent, DISCOVERY_REQUEST);
         } else {
             Log.i(TAG, "Bluetooth Not Enabled");
         }
@@ -225,6 +251,7 @@ public class HomeFragment extends BaseFragment {
             Log.i(TAG, "Enabling bluetooth");
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+            //startAdvertising();
 
         } else {
             Log.i(TAG, "Bluetooth Enabled");
@@ -236,15 +263,18 @@ public class HomeFragment extends BaseFragment {
 
     @Override
     public  void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i(TAG, "Request code " + requestCode);
        if (requestCode == REQUEST_ENABLE_BT) {
            if (resultCode == Activity.RESULT_OK) {
                //BLTManager.sharedInstance().startDiscovery();
                Log.i(TAG, "Starting BT advertisement");
                startAdvertising();
            }
-       } else if (requestCode == REQUEST_ENABLE_DISCOVERY) {
-           if (resultCode == Activity.RESULT_OK) {
-               //BLTManager.sharedInstance().start();
+       } else if (requestCode == DISCOVERY_REQUEST) {
+           Log.i(TAG, "Result code " + resultCode);
+           if (resultCode == 1000) {
+               Log.i(TAG, "Advertising accept");
+               mAdvertising = true;
            }
        }
    }
@@ -269,7 +299,7 @@ public class HomeFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "HOME: CREATE");
-
+        GPSUtil.sharedInstance().getLocation();
     }
 
     /**
@@ -316,14 +346,51 @@ public class HomeFragment extends BaseFragment {
     public void onResume() {
         super.onResume();
         Log.i(TAG, "HOME: RESUMED");
+        Log.i(TAG, "State = " + BLTManager.sharedInstance().getState());
+        Log.i(TAG, "BT Enabled = " + BLTManager.sharedInstance().isBluetoothEnabled());
+        Log.i(TAG, "Adverstising = " + mAdvertising);
         TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: RESUMED");
         updateButtonStates();
-        if (BLTManager.sharedInstance().getState() == BLTManager.STATE_NONE) {
-            BLTManager.sharedInstance().start();
-            Log.i(TAG, "Starting listen");
-        }
+        if (GPSUtil.sharedInstance().isGPSEnabled) {
 
+        }
+        if (BLTManager.sharedInstance().getState() == BLTManager.STATE_NONE &&
+                BLTManager.sharedInstance().isBluetoothEnabled()) {
+            if (mAdvertising) {
+                BLTManager.sharedInstance().start();
+                Log.i(TAG, "Starting listen");
+            }
+        }
     }
+
+//    private void checkPermissions() {
+//
+//        // Here, thisActivity is the current activity
+//        if (ContextCompat.checkSelfPermission(Activity,
+//                Manifest.permission.READ_CONTACTS)
+//                != PackageManager.PERMISSION_GRANTED) {
+//
+//            // Permission is not granted
+//            // Should we show an explanation?
+//            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
+//                    Manifest.permission.READ_CONTACTS)) {
+//                // Show an explanation to the user *asynchronously* -- don't block
+//                // this thread waiting for the user's response! After the user
+//                // sees the explanation, try again to request the permission.
+//            } else {
+//                // No explanation needed; request the permission
+//                ActivityCompat.requestPermissions(thisActivity,
+//                        new String[]{Manifest.permission.READ_CONTACTS},
+//                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+//
+//                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+//                // app-defined int constant. The callback method gets the
+//                // result of the request.
+//            }
+//        } else {
+//            // Permission has already been granted
+//        }
+//    }
 
     /**
      * Action when fragment is paused,
@@ -358,7 +425,7 @@ public class HomeFragment extends BaseFragment {
         } else if (BLTManager.sharedInstance().getState() == 2) {
             mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
         } else if (BLTManager.sharedInstance().getState() == 1){
-            mConnectionStatusTextView.setText(getString(R.string.BTlistening));
+            mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
         } else {
             mConnectionStatusTextView.setText(getString(R.string.BTnotConnected));
 }       updateCurrentRecordText();
@@ -730,7 +797,18 @@ public class HomeFragment extends BaseFragment {
     }
 
     /**
-     * Notification when bluetooth is connected
+     * Notification when bluetooth is listening
+     *
+     * @param event
+     */
+    @Subscribe
+    public void onBLTListeningEvent(BLTListeningNotification event) {
+        // Set connection status text to connected
+        mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
+    }
+
+    /**
+     * Notification when bluetooth is not connected
      *
      * @param event
      */

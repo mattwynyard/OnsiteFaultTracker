@@ -16,7 +16,6 @@
     <string name="connected">Usb connected</string>
     <string name="BTconnected">Bluetooth connected</string>
     <string name="BTconnecting">Bluetooth waiting for connection</string>
-    <string name="BTlistening">Bluetooth listening</string>
     <string name="BTnotConnected">Bluetooth not connected</string>
 
     <string name="charger_not_connected_title">Warning</string>
