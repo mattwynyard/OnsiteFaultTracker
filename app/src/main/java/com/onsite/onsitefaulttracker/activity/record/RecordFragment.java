@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,6 +39,11 @@ import com.onsite.onsitefaulttracker.util.SettingsUtil;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
 import com.squareup.otto.Subscribe;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Date;
 
 /**
@@ -227,13 +233,48 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
        mExposureSeekBar.setProgress(SettingsUtil.sharedInstance().getCurrentExposureAsPercentage());
     }
 
+    private void writeGPSFile(final String latitude, final String longitude, final String accuracy) {
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                String baseFolder = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath();
+
+                OutputStream fOutputStream;
+                File folder = new File(baseFolder);
+                if (!folder.exists()) {
+                    Log.e(TAG, "Error saving snap, Record path does not exist");
+                    return;
+                }
+                File file = new File(baseFolder + "/", "GPS.txt");
+                try {
+                    fOutputStream = new FileOutputStream(file, true);
+                    fOutputStream.write((latitude + "," + longitude + "," +
+                            accuracy + "\n").getBytes());
+                    fOutputStream.flush();
+                    fOutputStream.close();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        });
+    }
+
     /**
      * Take a snapshot and save it to the drive
      */
     private void takeSnapshot() {
         // Verify if recording or not,  if not dont take a snap,
         // just returns
-        GPSUtil.sharedInstance().getLocation();
+        Location location = GPSUtil.sharedInstance().getLocation();
+        String lat = Double.toString(location.getLatitude());
+        String lon = Double.toString(location.getLongitude());
+        String acc = Double.toString(location.getAccuracy());
+
+        writeGPSFile(lat, lon, acc);
         if (!mRecording) {
             return;
         }

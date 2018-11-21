@@ -12,8 +12,13 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.content.DialogInterface;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.String;
 
+import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -104,8 +109,8 @@ public class GPSUtil implements LocationListener {
         criteria.setBearingRequired(false);
 
 //API level 9 and up
-        criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-        criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+        //criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
+        //criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
 //        if (isGPSEnabled) {
 //            return true;
 //        } else {
