@@ -288,7 +288,8 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             float ratio = (!isLandscape) ?
                             ((float)snapBitmap.getHeight()/(float)snapBitmap.getWidth()) :
                             ((float)snapBitmap.getWidth()/(float)snapBitmap.getHeight());
-            BitmapSaveUtil.SaveBitmapResult saveResult = BitmapSaveUtil.sharedInstance().saveBitmap(snapBitmap, mRecord, ratio, isLandscape);
+            BitmapSaveUtil.SaveBitmapResult saveResult = BitmapSaveUtil.sharedInstance()
+                    .saveBitmap(snapBitmap, mRecord, ratio, isLandscape, location);
             long currentTime = new Date().getTime();
 
             // Check the result of saving the bitmap for low dis space or error

@@ -98,7 +98,7 @@ public class GPSUtil implements LocationListener {
         isGPSEnabled = mLocationManager
                 .isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-        Log.v("isGPSEnabled", "=" + isGPSEnabled);
+        Log.v("isGPSEnabled", "= " + isGPSEnabled);
 
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
@@ -144,6 +144,7 @@ public class GPSUtil implements LocationListener {
                 Log.d(TAG, "GPS Enabled");
                 if (mLocationManager != null) {
                     location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
                     if (location != null) {
                         latitude = location.getLatitude();
                         longitude = location.getLongitude();

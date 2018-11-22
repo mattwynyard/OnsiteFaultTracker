@@ -3,6 +3,8 @@ package com.onsite.onsitefaulttracker.util;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.location.Location;
+import android.support.media.ExifInterface;
 import android.util.Log;
 
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
@@ -14,9 +16,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.io.ByteArrayOutputStream;
+import java.util.TimeZone;
 
 /**
  * Created by hihi on 6/21/2016.
@@ -95,7 +99,8 @@ public class BitmapSaveUtil {
     public SaveBitmapResult saveBitmap(final Bitmap bitmapToSave,
                                        final Record record,
                                        final float widthDivisor,
-                                       final boolean isLandscape) {
+                                       final boolean isLandscape,
+                                       final Location location) {
         Date nowDate = new Date();
         String halfAppend = "";
         long time = nowDate.getTime();
@@ -132,6 +137,7 @@ public class BitmapSaveUtil {
                     return;
                 }
                 File file = new File(path + "/", filename + ".jpg");
+
                 try {
                     fOutputStream = new FileOutputStream(file);
 
@@ -155,16 +161,16 @@ public class BitmapSaveUtil {
 
                     bitmapToSave.recycle();
 
+
                     fOutputStream.flush();
                     fOutputStream.close();
+                    geoTagFile(file.getAbsolutePath(), location);
 
                     //send photo name to client
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
                     if (BLTManager.sharedInstance().getState() == 3) {
                         BLTManager.sharedInstance().sendMessage(filename + ".jpg");
                     }
-
-
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;
@@ -183,4 +189,51 @@ public class BitmapSaveUtil {
         }
     }
 
-}
+    //private String getImage(String)
+
+    private void geoTagFile(String path, Location location) {
+        File f = new File(path);
+        long gpsTime = location.getTime();
+
+        Date date = new Date(gpsTime);
+        DateFormat dateformater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        dateformater.setTimeZone(TimeZone.getDefault());
+        String dateFormatted = dateformater.format(date);
+
+        Log.d(TAG, "GPS Time: " + dateFormatted);
+//        if (f.exists()) {
+//            Log.e(TAG, "File exists and canRead = " + f.canRead());
+//        }
+        // if (path == null || location == null) return false;
+        ExifInterface exif;
+        try {
+            exif = new ExifInterface(path);
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, DMS(location.getLatitude()));
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, location.getLatitude()
+                    < 0 ? "S" : "N");
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, DMS(location.getLongitude()));
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, location.getLongitude()
+                    < 0 ? "W" : "E");
+            //exif.setAttribute(ExifInterface.);
+            exif.saveAttributes();
+
+            Log.d(TAG, "Wrote geotag" + path);
+            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
+            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
+        } catch (IOException e) {
+            e.printStackTrace();
+            //return false;
+        }
+        //return true;
+    }
+
+    private String DMS(double x) {
+        double d = Math.abs(x);
+        int degrees = (int) Math.floor(d);
+        int minutes = (int) Math.floor(((d - (double)degrees) * 60));
+        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * 1000);
+        return String.format("%d/1,%d/1,%d/1000", degrees, minutes, seconds);
+    }
+
+
+} //end class
