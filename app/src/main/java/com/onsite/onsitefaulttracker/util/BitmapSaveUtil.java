@@ -196,11 +196,11 @@ public class BitmapSaveUtil {
         long gpsTime = location.getTime();
 
         Date date = new Date(gpsTime);
-        DateFormat dateformater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        DateFormat dateformater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'ZZZZZ");
         dateformater.setTimeZone(TimeZone.getDefault());
         String dateFormatted = dateformater.format(date);
 
-        Log.d(TAG, "GPS Time: " + dateFormatted);
+        Log.d(TAG, "altitude: " + location.getAltitude());
 //        if (f.exists()) {
 //            Log.e(TAG, "File exists and canRead = " + f.canRead());
 //        }
@@ -214,12 +214,15 @@ public class BitmapSaveUtil {
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, DMS(location.getLongitude()));
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, location.getLongitude()
                     < 0 ? "W" : "E");
-            //exif.setAttribute(ExifInterface.);
+            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, formatAltitude(location, 100));
+            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, dateFormatted);
+            exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, "WGS_84");
             exif.saveAttributes();
 
             Log.d(TAG, "Wrote geotag" + path);
             Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
             Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
+            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
         } catch (IOException e) {
             e.printStackTrace();
             //return false;
@@ -227,12 +230,18 @@ public class BitmapSaveUtil {
         //return true;
     }
 
+    private String formatAltitude(Location location, int n) {
+        Double d = location.getAltitude() * n;
+        int altitude = (int)Math.floor(d);
+        return String.format("%d/" + String.valueOf(n), altitude);
+    }
+
     private String DMS(double x) {
         double d = Math.abs(x);
         int degrees = (int) Math.floor(d);
         int minutes = (int) Math.floor(((d - (double)degrees) * 60));
-        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * 1000);
-        return String.format("%d/1,%d/1,%d/1000", degrees, minutes, seconds);
+        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * 10000);
+        return String.format("%d/1,%d/1,%d/10000", degrees, minutes, seconds);
     }
 
 

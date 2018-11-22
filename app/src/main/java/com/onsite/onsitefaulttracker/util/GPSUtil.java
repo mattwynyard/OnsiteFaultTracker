@@ -103,7 +103,7 @@ public class GPSUtil implements LocationListener {
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setPowerRequirement(Criteria.POWER_HIGH);
-        criteria.setAltitudeRequired(false);
+        criteria.setAltitudeRequired(true);
         criteria.setSpeedRequired(false);
         //criteria.setCostAllowed(true);
         criteria.setBearingRequired(false);
@@ -151,6 +151,7 @@ public class GPSUtil implements LocationListener {
                         Float accuracy = location.getAccuracy();
                         Log.d("Latitude", Double.toString(latitude));
                         Log.d("Longitude", Double.toString(longitude));
+                        Log.d("Altitude", Double.toString(location.getAltitude()));
                         Log.d("Accuracy", Double.toString(accuracy));
                     } else {
                         Log.d(TAG, "Location Null");
