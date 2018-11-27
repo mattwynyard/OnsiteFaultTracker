@@ -156,11 +156,11 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         View view = super.onCreateView(inflater, container, savedInstanceState);
         if (view != null) {
             mDisplayedLowDiskError = false;
-            mTextureView = (AutoFitTextureView)view.findViewById(R.id.camera_texture_view);
+            mTextureView = view.findViewById(R.id.camera_texture_view);
             mOverlayView = view.findViewById(R.id.overlay_view);
-            mExposureSeekBar = (VerticalSeekBar)view.findViewById(R.id.exposure_seek_bar);
+            mExposureSeekBar = view.findViewById(R.id.exposure_seek_bar);
             mExposureSeekBar.setVisibility(View.INVISIBLE);//TODO:TEMPHACK
-            mPhotoCountTextView = (TextView)view.findViewById(R.id.photo_count);
+            mPhotoCountTextView = view.findViewById(R.id.photo_count);
             mConsecutiveBlankFrames = 0;
 
             mIntervalMillis = SettingsUtil.sharedInstance().getPictureFrequency();

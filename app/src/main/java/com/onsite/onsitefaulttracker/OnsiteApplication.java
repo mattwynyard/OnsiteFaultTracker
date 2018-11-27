@@ -10,6 +10,7 @@ import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
 import com.onsite.onsitefaulttracker.connectivity.BLEManager;
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
 import com.onsite.onsitefaulttracker.connectivity.TcpConnection;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStopRecordingEvent;
 import com.onsite.onsitefaulttracker.util.BatteryUtil;
 import com.onsite.onsitefaulttracker.util.BitmapSaveUtil;
@@ -40,7 +41,7 @@ public class OnsiteApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-        Fabric.with(this, new Crashlytics());
+        //Fabric.with(this, new Crashlytics());
         // initialize the singletons used throughout this app
         SettingsUtil.initialize(this);
         CalculationUtil.initialize(this);
@@ -58,20 +59,21 @@ public class OnsiteApplication extends Application {
                     @Override
                     public void uncaughtException(Thread thread, Throwable e) {
                         System.out.println("AppCrash");
-                        //TcpConnection.getSharedInstance().sendMessage("Crash");
-                        BLTManager.sharedInstance().sendMessage("Crash");
-                        BusNotificationUtil.sharedInstance().postNotification(new TCPStopRecordingEvent());
+                        e.printStackTrace();
+                        BLTManager.sharedInstance().sendMessage("APP: Crash");
+                        BusNotificationUtil.sharedInstance().
+                                postNotification(new BLTStopRecordingEvent());
                         //System.exit(1);
                     }
                 });
     }
 
     @Override
-    public void onTerminate() {
-        super.onTerminate();
-        //super.onLowMemory();
-        Log.i(TAG, "APP: TERMINATE");
-        TcpConnection.getSharedInstance().sendHomeWindowStatus("APP: TERMINATE");
+    public void onLowMemory() {
+        super.onLowMemory();
+        Log.i(TAG, "APP: Low Memory");
+        BLTManager.sharedInstance().sendMessage("APP: Low Memory");
+        BusNotificationUtil.sharedInstance().postNotification(new TCPStopRecordingEvent());
 
     }
 }

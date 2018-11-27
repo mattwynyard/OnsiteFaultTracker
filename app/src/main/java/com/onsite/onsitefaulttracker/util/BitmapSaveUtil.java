@@ -8,7 +8,6 @@ import android.support.media.ExifInterface;
 import android.util.Log;
 
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
-import com.onsite.onsitefaulttracker.connectivity.TcpConnection;
 import com.onsite.onsitefaulttracker.model.Record;
 
 import java.io.File;
@@ -19,7 +18,6 @@ import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.io.ByteArrayOutputStream;
 import java.util.TimeZone;
 
 /**
@@ -49,12 +47,12 @@ public class BitmapSaveUtil {
     private static BitmapSaveUtil sBitmapSaveUtil;
 
     // Store the application context for access to storage
-    private static Context mContext;
+    private Context mContext;
 
     /**
      * Store the appication context for access to storage
      *
-     * @param context
+     * @param context - the application context
      */
     public static void initialize(final Context context) {
         sBitmapSaveUtil = new BitmapSaveUtil(context);
@@ -62,7 +60,7 @@ public class BitmapSaveUtil {
 
     /**
      * Contructor, to be called internally via. initialize
-     * @param context
+     * @param context - the application context
      */
     private BitmapSaveUtil(final Context context) {
         mContext = context;
@@ -70,7 +68,7 @@ public class BitmapSaveUtil {
 
     /**
      * Returns a shared instance of BitmapSaveUtil
-     * @return
+     * @return - the shared instance of BitmapSaveUtil
      */
     public static BitmapSaveUtil sharedInstance() {
         if (sBitmapSaveUtil != null) {
@@ -80,15 +78,6 @@ public class BitmapSaveUtil {
         }
     }
 
-    //TODO fix for sending photos to controller
-//    public void sendBitmapResult(final Bitmap bmp) {
-//
-//        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//        bmp.compress(Bitmap.CompressFormat.JPEG, 0, byteStream);
-//        byte[] array = byteStream.toByteArray();
-//        TcpConnection.getSharedInstance().sendPhoto(array);
-//
-//    }
     /**
      * Saves a bitmap to storage taking in a temp number for now for the filename
      *
@@ -189,59 +178,97 @@ public class BitmapSaveUtil {
         }
     }
 
-    //private String getImage(String)
-
     private void geoTagFile(String path, Location location) {
         File f = new File(path);
-        long gpsTime = location.getTime();
-
-        Date date = new Date(gpsTime);
-        DateFormat dateformater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'ZZZZZ");
-        dateformater.setTimeZone(TimeZone.getDefault());
-        String dateFormatted = dateformater.format(date);
-
-        Log.d(TAG, "altitude: " + location.getAltitude());
-//        if (f.exists()) {
-//            Log.e(TAG, "File exists and canRead = " + f.canRead());
-//        }
-        // if (path == null || location == null) return false;
+        long time = location.getTime();
+        String timeStamp = getDateTimeStamp(time, "time");
+        String dateStamp = getDateTimeStamp(time, "date");
         ExifInterface exif;
         try {
             exif = new ExifInterface(path);
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, DMS(location.getLatitude()));
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE,
+                    DMS(location.getLatitude(), 10000));
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, location.getLatitude()
                     < 0 ? "S" : "N");
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, DMS(location.getLongitude()));
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE,
+                    DMS(location.getLongitude(), 10000));
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, location.getLongitude()
                     < 0 ? "W" : "E");
-            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, formatAltitude(location, 100));
-            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, dateFormatted);
+            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE,
+                    formatEXIFDouble(location.getAltitude(), 100));
+            exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION,
+                    formatEXIFDouble((double)location.getBearing(), 100));
+            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, timeStamp);
+            exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, dateStamp);
             exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, "WGS_84");
             exif.saveAttributes();
 
-            Log.d(TAG, "Wrote geotag" + path);
-            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
-            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
-            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
+//            Log.d(TAG, "Wrote geotag" + path);
+//            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
+//            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
+//            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
+//            Log.d(TAG, "Bearing " + exif.getAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION));
         } catch (IOException e) {
             e.printStackTrace();
-            //return false;
         }
-        //return true;
     }
 
-    private String formatAltitude(Location location, int n) {
-        Double d = location.getAltitude() * n;
+    private String getDateTimeStamp(long gpsTime, String type) {
+        Date date = new Date(gpsTime);
+        DateFormat dateformater = new SimpleDateFormat("yyyyMMddHHmmssZZZZZ");
+        dateformater.setTimeZone(TimeZone.getDefault());
+        String timestamp = dateformater.format(date);
+
+        if (type.equals("date")) {
+            StringBuilder s = new StringBuilder();
+            String year = timestamp.substring(0,4);
+            String month = timestamp.substring(4,6);
+            String day = timestamp.substring(6,8);
+            s.append(day);
+            s.append(":");
+            s.append(month);
+            s.append(":");
+            s.append(year);
+            return s.toString();
+        } else {
+            StringBuilder s = new StringBuilder();
+            String hour = timestamp.substring(8,10);
+            String minutes = timestamp.substring(10,12);
+            String seconds = timestamp.substring(12,14);
+            String zone = timestamp.substring(14,20);
+            s.append(hour);
+            s.append(":");
+            s.append(minutes);
+            s.append(":");
+            s.append(seconds);
+            return s.toString();
+        }
+    }
+    /**
+     * Converts a double value to the exif format
+     * @param x - the number to convert
+     * @param precision - the multiplier for altitude precision i.e the number of decimal places.
+     * @return the converted coordinate as a string in the exif format
+     */
+    private String formatEXIFDouble(double x, int precision) {
+        Double d = x * precision;
         int altitude = (int)Math.floor(d);
-        return String.format("%d/" + String.valueOf(n), altitude);
+        return String.format("%d/" + String.valueOf(precision), altitude);
     }
-
-    private String DMS(double x) {
+    /**
+     * Converts decimal lat/long coordinate to degrees, minutes, seconds. The returned string is in
+     * the exif format
+     *
+     * @param x - the coordinate to convert
+     * @param precision - the multiplier for seconds precision
+     * @return the converted coordinate as a string in the exif format
+     */
+    private String DMS(double x,  int precision) {
         double d = Math.abs(x);
         int degrees = (int) Math.floor(d);
         int minutes = (int) Math.floor(((d - (double)degrees) * 60));
-        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * 10000);
-        return String.format("%d/1,%d/1,%d/10000", degrees, minutes, seconds);
+        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * precision);
+        return String.format("%d/1,%d/1,%d/" + precision, degrees, minutes, seconds);
     }
 
 

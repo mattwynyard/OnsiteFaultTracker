@@ -44,7 +44,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         NoButtons,
         Settings,
         Back
-    };
+    }
 
     // Is this activity the current foreground activity?
     private boolean mCurrentActivity;
@@ -96,7 +96,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setContentInsetsAbsolute(0,0);
         if (actionBarConfig == ActionBarConfig.Hidden) {
@@ -188,9 +188,9 @@ public abstract class BaseActivity extends AppCompatActivity {
             RelativeLayout customView = (RelativeLayout) actionBar.getCustomView();
             if (customView != null) {
                 mActionBarCustomView = customView;
-                mActionBarTitleTextView = (TextView) customView.findViewById(R.id.action_bar_title);
+                mActionBarTitleTextView = customView.findViewById(R.id.action_bar_title);
 
-                mSettingsButton = (ImageButton) customView.findViewById(R.id.settings_button);
+                mSettingsButton = customView.findViewById(R.id.settings_button);
                 mSettingsButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -198,7 +198,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                     }
                 });
 
-                mBackButton = (ImageButton) customView.findViewById(R.id.back_button);
+                mBackButton = customView.findViewById(R.id.back_button);
                 mBackButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {

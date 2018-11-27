@@ -147,16 +147,16 @@ public class PreviousRecordsAdapter extends BaseAdapter {
             vi = inflater.inflate(R.layout.record_list_item, parent, false);
 
             holder = new ViewHolder();
-            holder.mNameTextView = (TextView) vi.findViewById(R.id.record_name_text_view);
-            holder.mDateTextView = (TextView) vi.findViewById(R.id.record_date_text_view);
-            holder.mImageCountTextView = (TextView) vi.findViewById(R.id.image_count_text_view);
-            holder.mRecordSizeTextView = (TextView) vi.findViewById(R.id.record_size_text_view);
-            holder.mRecordingTimeTextView = (TextView) vi.findViewById(R.id.recording_time_text_view);
-            holder.mProgressTextView = (TextView) vi.findViewById(R.id.progress_text_view);
-            holder.mRecordButton = (FloatingActionButton) vi.findViewById(R.id.record_button);
-            holder.mUploadButton = (FloatingActionButton) vi.findViewById(R.id.upload_button);
-            holder.mDeleteButton = (FloatingActionButton) vi.findViewById(R.id.delete_button);
-            holder.mMoreOptionsButton = (FloatingActionButton) vi.findViewById(R.id.more_button);
+            holder.mNameTextView = vi.findViewById(R.id.record_name_text_view);
+            holder.mDateTextView = vi.findViewById(R.id.record_date_text_view);
+            holder.mImageCountTextView = vi.findViewById(R.id.image_count_text_view);
+            holder.mRecordSizeTextView = vi.findViewById(R.id.record_size_text_view);
+            holder.mRecordingTimeTextView = vi.findViewById(R.id.recording_time_text_view);
+            holder.mProgressTextView = vi.findViewById(R.id.progress_text_view);
+            holder.mRecordButton = vi.findViewById(R.id.record_button);
+            holder.mUploadButton = vi.findViewById(R.id.upload_button);
+            holder.mDeleteButton = vi.findViewById(R.id.delete_button);
+            holder.mMoreOptionsButton = vi.findViewById(R.id.more_button);
 
             holder.mRecordButton.setBackgroundTintList(new ColorStateList(new int[][]{new int[]{0}}, new int[]{ContextCompat.getColor(mContext, R.color.record_red)}));
             holder.mUploadButton.setBackgroundTintList(new ColorStateList(new int[][]{new int[]{0}}, new int[]{ContextCompat.getColor(mContext, R.color.submit_blue)}));

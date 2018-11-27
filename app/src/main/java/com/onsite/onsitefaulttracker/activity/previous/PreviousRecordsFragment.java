@@ -59,7 +59,7 @@ public class PreviousRecordsFragment extends BaseFragment implements PreviousRec
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = super.onCreateView(inflater, container, savedInstanceState);
         if (view != null) {
-            mPreviousRecordsList = (ListView)view.findViewById(R.id.previous_records_list);
+            mPreviousRecordsList = view.findViewById(R.id.previous_records_list);
         }
         return view;
     }
@@ -154,9 +154,9 @@ public class PreviousRecordsFragment extends BaseFragment implements PreviousRec
                 .setView(moreOptionsLayout)
                 .show();
 
-        final TextView nameTextView = (TextView)moreOptionsLayout.findViewById(R.id.record_name_text_view);
+        final TextView nameTextView = moreOptionsLayout.findViewById(R.id.record_name_text_view);
 
-        final Button submitButton = (Button)moreOptionsLayout.findViewById(R.id.submit_record_button);
+        final Button submitButton = moreOptionsLayout.findViewById(R.id.submit_record_button);
         submitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -164,7 +164,7 @@ public class PreviousRecordsFragment extends BaseFragment implements PreviousRec
             }
         });
 
-        final Button continueButton = (Button)moreOptionsLayout.findViewById(R.id.continue_recording_button);
+        final Button continueButton = moreOptionsLayout.findViewById(R.id.continue_recording_button);
         continueButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -172,7 +172,7 @@ public class PreviousRecordsFragment extends BaseFragment implements PreviousRec
             }
         });
 
-        final Button deleteButton = (Button)moreOptionsLayout.findViewById(R.id.delete_record_button);
+        final Button deleteButton = moreOptionsLayout.findViewById(R.id.delete_record_button);
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

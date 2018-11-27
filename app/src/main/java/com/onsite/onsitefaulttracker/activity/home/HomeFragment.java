@@ -137,7 +137,7 @@ public class HomeFragment extends BaseFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = super.onCreateView(inflater, container, savedInstanceState);
         if (view != null) {
-            mNewRecordButton = (Button)view.findViewById(R.id.new_record_button);
+            mNewRecordButton = view.findViewById(R.id.new_record_button);
             mNewRecordButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -145,7 +145,7 @@ public class HomeFragment extends BaseFragment {
                 }
             });
 
-            mContinueRecordButton = (Button)view.findViewById(R.id.continue_record_button);
+            mContinueRecordButton = view.findViewById(R.id.continue_record_button);
             mContinueRecordButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -153,7 +153,7 @@ public class HomeFragment extends BaseFragment {
                 }
             });
 
-            mSubmitRecordButton = (Button)view.findViewById(R.id.submit_record_button);
+            mSubmitRecordButton = view.findViewById(R.id.submit_record_button);
             mSubmitRecordButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -161,7 +161,7 @@ public class HomeFragment extends BaseFragment {
                 }
             });
 
-            mPreviousRecordsButton = (Button)view.findViewById(R.id.previous_records_button);
+            mPreviousRecordsButton = view.findViewById(R.id.previous_records_button);
             mPreviousRecordsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -169,11 +169,11 @@ public class HomeFragment extends BaseFragment {
                 }
             });
 
-            mCurrentRecordName = (TextView)view.findViewById(R.id.current_record_name);
-            mCurrentRecordDate = (TextView)view.findViewById(R.id.current_record_date);
-            mConnectionStatusTextView = (TextView)view.findViewById(R.id.connected_text_view);
+            mCurrentRecordName = view.findViewById(R.id.current_record_name);
+            mCurrentRecordDate = view.findViewById(R.id.current_record_date);
+            mConnectionStatusTextView = view.findViewById(R.id.connected_text_view);
 
-            mAppVersion = (TextView)view.findViewById(R.id.app_version_text_view);
+            mAppVersion = view.findViewById(R.id.app_version_text_view);
             initAppVersionText();
             requestCameraPermission();
             requestStoragePermission();
@@ -218,9 +218,9 @@ public class HomeFragment extends BaseFragment {
        }
    }
 
-//   private void checkGPSPermissions() {
-//       requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-//   }
+   private void requestWritePerission() {
+
+   }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -232,8 +232,18 @@ public class HomeFragment extends BaseFragment {
                     Log.i(TAG, "Need location permission");
                 }
                 break;
+            case STORAGE_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // All good!
+                } else {
+                    Log.i(TAG, "Need location permission");
+                }
+               break;
         }
     }
+    /**
+     * Creates an Intent to enable a bluetooth advert for 1000 seconds
+     */
     //TODO Temp hack should be moved to BLTManager
     public void startAdvertising() {
         if (BLTManager.sharedInstance().isBluetoothEnabled()) {
@@ -245,34 +255,38 @@ public class HomeFragment extends BaseFragment {
             Log.i(TAG, "Bluetooth Not Enabled");
         }
     }
-
+    /**
+     * Creates an Intent if bluetooth is not enables otherwise starts a bluetooth advert.
+     */
     public void enableBluetooth() {
+        //Bluetooth not enabled
         if (!BLTManager.sharedInstance().isBluetoothEnabled()) {
             Log.i(TAG, "Enabling bluetooth");
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-            //startAdvertising();
-
         } else {
             Log.i(TAG, "Bluetooth Enabled");
-            //BLTManager.sharedInstance().startDiscovery();
             Log.i(TAG, "Starting BT advertisement");
             startAdvertising();
         }
     }
-
+    /**
+     * Captures users selection results from pop-up message window
+     * @param requestCode - the type of service requested
+     * @param resultCode - the result from the user, usually ok/cancel or yes/no
+     * @param data - a Intent carrying the result data
+     */
     @Override
     public  void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i(TAG, "Request code " + requestCode);
        if (requestCode == REQUEST_ENABLE_BT) {
            if (resultCode == Activity.RESULT_OK) {
-               //BLTManager.sharedInstance().startDiscovery();
                Log.i(TAG, "Starting BT advertisement");
                startAdvertising();
            }
        } else if (requestCode == DISCOVERY_REQUEST) {
            Log.i(TAG, "Result code " + resultCode);
-           if (resultCode == 1000) {
+           if (resultCode == 1000) { //user selected OK
                Log.i(TAG, "Advertising accept");
                mAdvertising = true;
            }
@@ -492,22 +506,25 @@ public class HomeFragment extends BaseFragment {
     private boolean requestStoragePermission() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (getActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
+                    == PackageManager.PERMISSION_GRANTED) {
+                return true;
+            } else {
                 ActivityCompat.requestPermissions(getActivity(),
                         new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         STORAGE_PERMISSION_REQUEST_CODE);
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
+
 
     /**
      * Action when the user clicks
      */
     private void onNewRecordClicked() {
-        if (requestStoragePermission()) { //storage permission false
-            TcpConnection.getSharedInstance().sendMessage("M: No storage permission");
+        if (!requestStoragePermission()) { //storage permission false
+            //TcpConnection.getSharedInstance().sendMessage("M: No storage permission");
             BLTManager.sharedInstance().sendMessage("M: No storage permission");
             return;
         }

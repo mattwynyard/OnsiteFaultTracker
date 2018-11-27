@@ -165,7 +165,7 @@ public class SettingsFragment extends BaseFragment implements SettingItem.Listen
                     SettingItem.SettingItemType.SettingItemTypeFrameDuration);
             mFrameDurationItem.setListener(this);
 
-            mCameraIdTextView = (TextView)view.findViewById(R.id.camera_id_edit_text);
+            mCameraIdTextView = view.findViewById(R.id.camera_id_edit_text);
             mCameraIdTextView.setClickable(true);
             mCameraIdTextView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -174,10 +174,10 @@ public class SettingsFragment extends BaseFragment implements SettingItem.Listen
                 }
             });
 
-            mRequiredStorageTextView = (TextView)view.findViewById(R.id.required_storage_text_view);
-            mAvailableStorageTextView = (TextView)view.findViewById(R.id.available_storage_text_view);
+            mRequiredStorageTextView = view.findViewById(R.id.required_storage_text_view);
+            mAvailableStorageTextView = view.findViewById(R.id.available_storage_text_view);
 
-            mRestoreDefaultsButton = (Button)view.findViewById(R.id.restore_defaults_button);
+            mRestoreDefaultsButton = view.findViewById(R.id.restore_defaults_button);
             mRestoreDefaultsButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

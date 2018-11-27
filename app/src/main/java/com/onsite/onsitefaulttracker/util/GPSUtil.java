@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Application;
 import android.content.Context;
 import android.location.Criteria;
+import android.location.GnssStatus;
 import android.os.Bundle;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -106,18 +107,8 @@ public class GPSUtil implements LocationListener {
         criteria.setAltitudeRequired(true);
         criteria.setSpeedRequired(false);
         //criteria.setCostAllowed(true);
-        criteria.setBearingRequired(false);
+        criteria.setBearingRequired(true);
 
-//API level 9 and up
-        //criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-        //criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
-//        if (isGPSEnabled) {
-//            return true;
-//        } else {
-//            return false;
-//        }
-            //mLocation = getLocation();
-            //showSettingsAlert();
         }
 
     public Location getLocation() {
@@ -168,6 +159,15 @@ public class GPSUtil implements LocationListener {
         return location;
     }
 
+    private boolean checkPermssion() {
+        return ActivityCompat.checkSelfPermission(mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(mContext,
+                        Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED;
+    }
+
     @Override
     public void onLocationChanged(Location location) {
         if (ActivityCompat.checkSelfPermission(mContext,
@@ -177,16 +177,7 @@ public class GPSUtil implements LocationListener {
                         Manifest.permission.ACCESS_COARSE_LOCATION) ==
                         PackageManager.PERMISSION_GRANTED) {
             if (mLocationManager != null) {
-                //location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-//                if (location != null) {
-//                    latitude = location.getLatitude();
-//                    longitude = location.getLongitude();
-//                    Log.d("Latitude", Double.toString(latitude));
-//                    Log.d("Longitude", Double.toString(longitude));
-//                } else {
-//                    Log.d(TAG, "Location Null");
-//                }
             } else {
                 Log.d(TAG, "Location Manager Null");
             }
@@ -204,5 +195,29 @@ public class GPSUtil implements LocationListener {
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
     }
+
+    // To implement on >SDK 24 at present min = 23
+//    public void onGpsStatusChanged(int event) {
+//
+//            int satellites = 0;
+//
+//            int satellitesInFix = 0;
+//        GnssStatus gnssStatus = new GnssStatus.Callback();
+//        if (ActivityCompat.checkSelfPermission(mContext,
+//                Manifest.permission.ACCESS_FINE_LOCATION)
+//                == PackageManager.PERMISSION_GRANTED &&
+//                ActivityCompat.checkSelfPermission(mContext,
+//                        Manifest.permission.ACCESS_COARSE_LOCATION) ==
+//                        PackageManager.PERMISSION_GRANTED) {
+//            int timetofix = mLocationManager.getGpsStatus(null).getTimeToFirstFix();
+//            Log.i(TAG, "Time to first fix = " + timetofix);
+//            for (GpsSatellite sat : mLocationManager.getGpsStatus(null).getSatellites()) {
+//                if (sat.usedInFix()) {
+//                    satellitesInFix++;
+//                }
+//                satellites++;
+//            }
+//            Log.i(TAG, satellites + " Used In Last Fix (" + satellitesInFix + ")");
+//        }
 
 }

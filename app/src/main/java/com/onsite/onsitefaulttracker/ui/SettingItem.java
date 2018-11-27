@@ -79,12 +79,12 @@ public class SettingItem {
         mSettingItemType = settingType;
         mSettingLayoutId = getResourceIdForSettingType();
 
-        mSettingLayout = (RelativeLayout)view.findViewById(mSettingLayoutId);
-        mPlusButton = (FloatingActionButton)mSettingLayout.findViewById(R.id.setting_item_plus_button);
-        mMinusButton = (FloatingActionButton)mSettingLayout.findViewById(R.id.setting_item_minus_button);
-        mTitleView = (TextView)mSettingLayout.findViewById(R.id.setting_item_title);
-        mValueView = (TextView)mSettingLayout.findViewById(R.id.setting_item_value);
-        mSeekBar = (SeekBar)mSettingLayout.findViewById(R.id.setting_item_seek_bar);
+        mSettingLayout = view.findViewById(mSettingLayoutId);
+        mPlusButton = mSettingLayout.findViewById(R.id.setting_item_plus_button);
+        mMinusButton = mSettingLayout.findViewById(R.id.setting_item_minus_button);
+        mTitleView = mSettingLayout.findViewById(R.id.setting_item_title);
+        mValueView = mSettingLayout.findViewById(R.id.setting_item_value);
+        mSeekBar = mSettingLayout.findViewById(R.id.setting_item_seek_bar);
 
         mPlusButton.setOnClickListener(new View.OnClickListener() {
             @Override

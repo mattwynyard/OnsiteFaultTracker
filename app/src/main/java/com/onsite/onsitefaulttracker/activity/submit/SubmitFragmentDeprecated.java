@@ -105,21 +105,21 @@ public class SubmitFragmentDeprecated extends BaseFragment implements DropboxCli
                 mRecordId = args.getString(ARG_RECORD_ID);
             }
 
-            mNameTextView = (TextView) view.findViewById(R.id.record_name_text_view);
-            mDateTextView = (TextView) view.findViewById(R.id.record_creation_date_text_view);
-            mTotalSizeTextView = (TextView) view.findViewById(R.id.total_size_text_view);
-            mRemainingTextView = (TextView) view.findViewById(R.id.remaining_size_text_view);
-            mSubmitButton = (Button) view.findViewById(R.id.submit_record_button);
+            mNameTextView = view.findViewById(R.id.record_name_text_view);
+            mDateTextView = view.findViewById(R.id.record_creation_date_text_view);
+            mTotalSizeTextView = view.findViewById(R.id.total_size_text_view);
+            mRemainingTextView = view.findViewById(R.id.remaining_size_text_view);
+            mSubmitButton = view.findViewById(R.id.submit_record_button);
             mSubmitButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     onSubmitClicked();
                 }
             });
-            mPercentageTextView = (TextView) view.findViewById(R.id.uploaded_percentage_text_view);
-            mCurrentImageView = (ImageView) view.findViewById(R.id.current_image_id);
-            mSubmittingProgressBar = (ProgressBar) view.findViewById(R.id.submitting_progress_bar);
-            mRecordSubmittedTextView = (TextView) view.findViewById(R.id.record_submitted_text_view);
+            mPercentageTextView = view.findViewById(R.id.uploaded_percentage_text_view);
+            mCurrentImageView = view.findViewById(R.id.current_image_id);
+            mSubmittingProgressBar = view.findViewById(R.id.submitting_progress_bar);
+            mRecordSubmittedTextView = view.findViewById(R.id.record_submitted_text_view);
 
             mRecord = RecordUtil.sharedInstance().getRecordWithId(mRecordId);
 

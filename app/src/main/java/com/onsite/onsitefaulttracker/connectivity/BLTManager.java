@@ -1,40 +1,32 @@
 package com.onsite.onsitefaulttracker.connectivity;
 
-import android.Manifest;
 import android.app.Application;
+//Bluetooth
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
-import  android.bluetooth.BluetoothSocket;
+import android.bluetooth.BluetoothSocket;
+import java.util.UUID;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.app.Service;
 
 import android.content.IntentFilter;
 import android.app.Activity;
-import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-
-import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
+//Notifications
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
+import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTNotConnectedNotification;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTListeningNotification;
-import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStartRecordingEvent;
-import com.onsite.onsitefaulttracker.model.notifcation_events.TCPStopRecordingEvent;
-import com.onsite.onsitefaulttracker.model.notifcation_events.UsbDisconnectedNotification;
 import com.onsite.onsitefaulttracker.util.BusNotificationUtil;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.util.UUID;
+
 import java.io.IOException;
 
-import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
-import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
 /**
@@ -55,13 +47,11 @@ public class BLTManager extends Activity {
     private static final String NAME = "OnsiteBluetoothserver";
     private int mState;
     final Object lock = new Object();
-
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
-
     // Shared Instance, to be initialized once and used throughout the application
     private static BLTManager sSharedInstance;
     // Application context
@@ -69,12 +59,11 @@ public class BLTManager extends Activity {
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothSocket mSocket;
     private AcceptThread mAcceptThread;
+    private Thread mReadThread;
     private InputStream in;
+    private PrintWriter mWriterOut;
 
     private boolean mRecording;
-
-    private Thread mReadThread;
-    private PrintWriter mWriterOut;
 
     /**
      * initialize the BLTManager class,  to be called once from the application class
@@ -109,13 +98,15 @@ public class BLTManager extends Activity {
         Log.i(TAG, "Bluetooth Setup");
     }
 
+    /**
+     * Intialise the bluetooth adapter and set name and connection state
+     */
     public void setupBluetooth() {
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mBluetoothAdapter.setName(BLUETOOTH_ADAPTER_NAME);
         mState = STATE_NONE;
     }
-
     /**
      * Update whether the app is recording or not
      *
@@ -125,14 +116,12 @@ public class BLTManager extends Activity {
         mRecording = recording;
         sendRecordingStatus();
     }
-
     /**
      * Return the current connection state.
      */
     public synchronized int getState() {
         return mState;
     }
-
     /**
      * Set the current state of the chat connection
      *
@@ -211,6 +200,9 @@ public class BLTManager extends Activity {
         return mBluetoothAdapter.isEnabled();
     }
 
+    /**
+     * Enables android app to discover bluetooth devices using a broadcast receiver: DEPRECIATED
+     */
     public void startDiscovery() {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_FOUND);
@@ -224,6 +216,9 @@ public class BLTManager extends Activity {
         mBluetoothAdapter.startDiscovery();
     }
 
+    /**
+     * Receives events when a bluetooth device has been discovered: DEPRECIATED
+     */
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -243,6 +238,10 @@ public class BLTManager extends Activity {
         }
     };
 
+    /**
+     * Class to handle the accept connection from bluetooth device behaves as server socket
+     * and runs on its own thread
+     */
     //SPP maximum payload capacity is 128 bytes.
     private class AcceptThread extends Thread {
         private final BluetoothServerSocket mmServerSocket;
@@ -281,13 +280,10 @@ public class BLTManager extends Activity {
                     Log.i(TAG,  "Server socket listening");
                     mSocket = mmServerSocket.accept();
                     setState(STATE_LISTEN);
-
-
                 } catch (IOException e) {
                     Log.e(TAG, "Socket's accept() method failed", e);
                     break;
                 }
-
                 if (mSocket != null) {
                     // A connection was accepted. Perform work associated with
                     // the connection in a separate thread.
@@ -295,14 +291,12 @@ public class BLTManager extends Activity {
                     Log.i(TAG, "Connected to: " + mSocket.getRemoteDevice().getAddress());
                     setState(STATE_CONNECTED);
                     BusNotificationUtil.sharedInstance().postNotification(new BLTConnectedNotification());
-
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
                         mWriterOut.println("CONNECTED\n");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
                     mReadThread = new Thread(readFromClient);
                     mReadThread.setName("ReadThread");
                     mReadThread.setPriority(Thread.MAX_PRIORITY);

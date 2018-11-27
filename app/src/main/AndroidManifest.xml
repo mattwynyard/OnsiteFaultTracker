@@ -25,6 +25,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="ec768a10934651d64676419053063876e832a3cf"
