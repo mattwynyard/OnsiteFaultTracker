@@ -51,7 +51,7 @@ public class OnsiteApplication extends Application {
         RecordUtil.initialize(this);
         BLTManager.initialize(this);
         BusNotificationUtil.initialize(this);
-        TcpConnection.initialize(this);
+        //TcpConnection.initialize(this);
         GPSUtil.initialize(this);
 
         Thread.setDefaultUncaughtExceptionHandler(

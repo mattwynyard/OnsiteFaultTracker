@@ -319,14 +319,14 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 mLastBatteryCheckedTime = currentTime;
                 float currentBatteryLevel = BatteryUtil.sharedInstance().getBatteryLevel();
                 //TODO fix where battery message is sent from
-                if (TcpConnection.getSharedInstance().isConnected()) {
-                    int batteryLevel = Math.round(currentBatteryLevel);
-                    String msg = "B: " + Integer.toString(batteryLevel) + "%";
-                    TcpConnection.getSharedInstance().sendMessage(msg);
-                    if (!TcpConnection.getSharedInstance().isConnected()) {
-                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
-                    }
-                }
+//                if (TcpConnection.getSharedInstance().isConnected()) {
+//                    int batteryLevel = Math.round(currentBatteryLevel);
+//                    String msg = "B: " + Integer.toString(batteryLevel) + "%";
+//                    TcpConnection.getSharedInstance().sendMessage(msg);
+//                    if (!TcpConnection.getSharedInstance().isConnected()) {
+//                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
+//                    }
+//                }
                 if (BLTManager.sharedInstance().getState() == 3) { //STATE_CONNECTED
                     int batteryLevel = Math.round(currentBatteryLevel);
                     String msg = "B: " + Integer.toString(batteryLevel) + "%";
@@ -362,9 +362,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      */
     private void onRecordingError() {
         stopRecording();
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            TcpConnection.getSharedInstance().sendMessage("E: RECORDING_ERROR");
-        }
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            TcpConnection.getSharedInstance().sendMessage("E: RECORDING_ERROR");
+//        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("E: RECORDING_ERROR");
         }
@@ -400,9 +400,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      */
     private void onOutOfDiskSpaceError() {
         stopRecording();
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            TcpConnection.getSharedInstance().sendMessage("M: OUT OF DISK SPACE");
-        }
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            TcpConnection.getSharedInstance().sendMessage("M: OUT OF DISK SPACE");
+//        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("M: OUT OF DISK SPACE");
         }
@@ -451,9 +451,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      */
     private void displayLowDiskSpaceError() {
 
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            TcpConnection.getSharedInstance().sendMessage("M: LOW DISK SPACE");
-        }
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            TcpConnection.getSharedInstance().sendMessage("M: LOW DISK SPACE");
+//        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("M: LOW DISK SPACE");
         }
@@ -475,9 +475,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      * Display the low battery warning to the user
      */
     private void displayLowBatteryError() {
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            TcpConnection.getSharedInstance().sendMessage("LOW_BATTERY");
-        }
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            TcpConnection.getSharedInstance().sendMessage("LOW_BATTERY");
+//        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("B: LOW_BATTERY");
         }
@@ -524,7 +524,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             Log.i(TAG, "Start recording called");
             mStartedRecordingTime = new Date().getTime();
             mRecording = true;
-            TcpConnection.getSharedInstance().setRecording(true);
+            //TcpConnection.getSharedInstance().setRecording(true);
             BLTManager.sharedInstance().setRecording(true);
             scheduleNextFrame();
         } else {
@@ -538,7 +538,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         if (mRecording) {
             Log.i(TAG, "Stop recording called");
             mRecording = false;
-            TcpConnection.getSharedInstance().setRecording(false);
+            //TcpConnection.getSharedInstance().setRecording(false);
             BLTManager.sharedInstance().setRecording(false);
         } else {
             Log.i(TAG, "Stop recording called but already recording");

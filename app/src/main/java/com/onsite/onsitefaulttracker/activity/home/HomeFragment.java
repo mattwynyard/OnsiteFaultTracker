@@ -366,7 +366,7 @@ public class HomeFragment extends BaseFragment {
     public void onStop() {
         super.onStop();
         Log.i(TAG, "HOME: STOPPED");
-        TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: STOPPED");
+        //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: STOPPED");
         updateButtonStates();
     }
 
@@ -532,14 +532,15 @@ public class HomeFragment extends BaseFragment {
      * Action when user clicks on continue button, continue recording the current record
      */
     private void onContinueButtonClicked() {
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            if (!BatteryUtil.sharedInstance().isChargerConnected()) {
-                TcpConnection.getSharedInstance().sendMessage("B: Not charging");
-            }
-            if (mListener != null) {
-                mListener.onNewRecord();
-            }
-        } else if (BLTManager.sharedInstance().getState() == 3) {
+//i        if (TcpConnection.getSharedInstance().isConnected()) {
+////            if (!BatteryUtil.sharedInstance().isChargerConnected()) {
+////                TcpConnection.getSharedInstance().sendMessage("B: Not charging");
+////            }
+////            if (mListener != null) {
+////                mListener.onNewRecord();
+////            }
+////        } else i
+        if (BLTManager.sharedInstance().getState() == 3) {
             if (!BatteryUtil.sharedInstance().isChargerConnected()) {
                 BLTManager.sharedInstance().sendMessage("B: Not charging");
             }
@@ -582,15 +583,16 @@ public class HomeFragment extends BaseFragment {
      * Check for existing records
      */
     private void checkForExistingRecords() {
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            if (RecordUtil.sharedInstance().checkRecordExistsForToday()) {
-                if (mListener != null) {
-                    mListener.onNewRecord();
-                }
-            } else {
-                requestRecordName();
-            }
-        } else if (BLTManager.sharedInstance().getState() == 3) {
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            if (RecordUtil.sharedInstance().checkRecordExistsForToday()) {
+//                if (mListener != null) {
+//                    mListener.onNewRecord();
+//                }
+//            } else {
+//                requestRecordName();
+//            }
+//        } else
+        if (BLTManager.sharedInstance().getState() == 3) {
             if (RecordUtil.sharedInstance().checkRecordExistsForToday()) {
                 if (mListener != null) {
                     mListener.onNewRecord();
@@ -628,14 +630,15 @@ public class HomeFragment extends BaseFragment {
      * with that name
      */
     private void requestRecordName() {
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            final String todaysDisplayDate = dateFormat.format(new Date());
-            String camera = SettingsUtil.sharedInstance().getCameraId();
-            System.out.println(camera + "_" + todaysDisplayDate);
-            createRecord(camera + "_" + todaysDisplayDate);
-            TcpConnection.getSharedInstance().sendMessage("Record created: " + camera + "_" + todaysDisplayDate);
-        } else if (BLTManager.sharedInstance().getState() == 3) {
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//            final String todaysDisplayDate = dateFormat.format(new Date());
+//            String camera = SettingsUtil.sharedInstance().getCameraId();
+//            System.out.println(camera + "_" + todaysDisplayDate);
+//            createRecord(camera + "_" + todaysDisplayDate);
+//            TcpConnection.getSharedInstance().sendMessage("Record created: " + camera + "_" + todaysDisplayDate);
+//        } else
+if (BLTManager.sharedInstance().getState() == 3) {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             final String todaysDisplayDate = dateFormat.format(new Date());
             String camera = SettingsUtil.sharedInstance().getCameraId();
