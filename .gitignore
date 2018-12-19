@@ -1,8 +1,26 @@
+# Android Studio
 *.iml
+.idea
+#.idea/workspace.xml - remove # and delete .idea if it better suit your needs.
 .gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
-.DS_Store
-/build
-/captures
+build/
+.navigation
+captures/
+output.json
+
+# generated files
+bin/
+gen/
+
+#built application files
+*.apk
+*.ap_
+
+# Java class files
+*.class
+
+# Windows thumbnail db
+Thumbs.db
+
+# Local configuration file (sdk path, etc)
+local.properties

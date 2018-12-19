@@ -2,6 +2,7 @@ package com.onsite.onsitefaulttracker.activity.home;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.app.KeyguardManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -111,17 +113,13 @@ public class HomeFragment extends BaseFragment {
     // Tcp Connection runnable
     private TcpConnection mTcpConnection; // TODO:TEMPHACK TEST
 
-
     private final int PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 1;
     private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
     private int REQUEST_ENABLE_DISCOVERY = 4;
     private int DISCOVERY_REQUEST = 5;
     private static final int REQUEST_ENABLE_BT = 6;
-
     private boolean mAdvertising = false;
-
-
-
+    private final int BT_TIMEOUT = 120;
 
     /**
      * On create view, Override this in each extending fragment to implement initialization for that
@@ -182,9 +180,6 @@ public class HomeFragment extends BaseFragment {
             //setupBluetooth();
             //checkGPSPermissions();
             enableBluetooth();
-
-
-
         }
         return view;
     }
@@ -196,11 +191,11 @@ public class HomeFragment extends BaseFragment {
       /**
      * Start a tcp connection;
      */
-    private void runTcpConnection() {
-
-        TcpConnection.getSharedInstance().startTcpConnection();
-
-   }
+//    private void runTcpConnection() {
+//
+//        TcpConnection.getSharedInstance().startTcpConnection();
+//
+//   }
    private void setupBluetooth() {
         BLTManager.sharedInstance().setupBluetooth();
 
@@ -218,12 +213,46 @@ public class HomeFragment extends BaseFragment {
        }
    }
 
-   private void requestWritePerission() {
+    /**
+     * Requests camera permissions if they are not already granted
+     */
+    private boolean requestCameraPermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (getActivity().checkSelfPermission(Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED) {
+                return true;
+            } else {
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.CAMERA},
+                        CAMERA_PERMISSION_REQUEST_CODE);
+                return false;
+            }
+        }
+        return true;
+    }
 
-   }
+    /**
+     * Requests storage permissions if they are not already granted
+     */
+    private boolean requestStoragePermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (getActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        STORAGE_PERMISSION_REQUEST_CODE);
+                return true;
+            } else {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -234,11 +263,11 @@ public class HomeFragment extends BaseFragment {
                 break;
             case STORAGE_PERMISSION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // All good!
+                    return;
                 } else {
                     Log.i(TAG, "Need location permission");
                 }
-               break;
+               return;
         }
     }
     /**
@@ -249,8 +278,8 @@ public class HomeFragment extends BaseFragment {
         if (BLTManager.sharedInstance().isBluetoothEnabled()) {
             Intent discoverableIntent =
                     new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1000);
-            startActivityForResult(discoverableIntent, DISCOVERY_REQUEST);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION,  BT_TIMEOUT);
+            startActivityForResult(discoverableIntent, REQUEST_ENABLE_DISCOVERY);
         } else {
             Log.i(TAG, "Bluetooth Not Enabled");
         }
@@ -268,6 +297,7 @@ public class HomeFragment extends BaseFragment {
             Log.i(TAG, "Bluetooth Enabled");
             Log.i(TAG, "Starting BT advertisement");
             startAdvertising();
+            //BLTManager.sharedInstance().startDiscovery();
         }
     }
     /**
@@ -284,9 +314,9 @@ public class HomeFragment extends BaseFragment {
                Log.i(TAG, "Starting BT advertisement");
                startAdvertising();
            }
-       } else if (requestCode == DISCOVERY_REQUEST) {
+       } else if (requestCode == REQUEST_ENABLE_DISCOVERY) {
            Log.i(TAG, "Result code " + resultCode);
-           if (resultCode == 1000) { //user selected OK
+           if (resultCode ==  BT_TIMEOUT) { //user selected OK
                Log.i(TAG, "Advertising accept");
                mAdvertising = true;
            }
@@ -348,7 +378,7 @@ public class HomeFragment extends BaseFragment {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "HOME: DESTROYED");
-        TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: DESTROYED");
+        //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: DESTROYED");
         updateButtonStates();
     }
 
@@ -363,7 +393,7 @@ public class HomeFragment extends BaseFragment {
         Log.i(TAG, "State = " + BLTManager.sharedInstance().getState());
         Log.i(TAG, "BT Enabled = " + BLTManager.sharedInstance().isBluetoothEnabled());
         Log.i(TAG, "Adverstising = " + mAdvertising);
-        TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: RESUMED");
+        //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: RESUMED");
         updateButtonStates();
         if (GPSUtil.sharedInstance().isGPSEnabled) {
 
@@ -377,35 +407,6 @@ public class HomeFragment extends BaseFragment {
         }
     }
 
-//    private void checkPermissions() {
-//
-//        // Here, thisActivity is the current activity
-//        if (ContextCompat.checkSelfPermission(Activity,
-//                Manifest.permission.READ_CONTACTS)
-//                != PackageManager.PERMISSION_GRANTED) {
-//
-//            // Permission is not granted
-//            // Should we show an explanation?
-//            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
-//                    Manifest.permission.READ_CONTACTS)) {
-//                // Show an explanation to the user *asynchronously* -- don't block
-//                // this thread waiting for the user's response! After the user
-//                // sees the explanation, try again to request the permission.
-//            } else {
-//                // No explanation needed; request the permission
-//                ActivityCompat.requestPermissions(thisActivity,
-//                        new String[]{Manifest.permission.READ_CONTACTS},
-//                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
-//
-//                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-//                // app-defined int constant. The callback method gets the
-//                // result of the request.
-//            }
-//        } else {
-//            // Permission has already been granted
-//        }
-//    }
-
     /**
      * Action when fragment is paused,
      * updates the state of all the buttons
@@ -414,7 +415,7 @@ public class HomeFragment extends BaseFragment {
     public void onPause() {
         super.onPause();
         Log.i(TAG, "HOME: PAUSED");
-        TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME PAUSED");
+        //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME PAUSED");
         updateButtonStates();
     }
 
@@ -429,11 +430,6 @@ public class HomeFragment extends BaseFragment {
         mSubmitRecordButton.setEnabled(hasCurrentRecord);
         mPreviousRecordsButton.setEnabled(hasRecords);
 
-//        if (TcpConnection.getSharedInstance().isConnected()) {
-//            mConnectionStatusTextView.setText(getString(R.string.connected));
-//        } else {
-//            mConnectionStatusTextView.setText(getString(R.string.not_connected));
-//        }
         if (BLTManager.sharedInstance().getState() == 3) {
             mConnectionStatusTextView.setText(getString(R.string.BTconnected));
         } else if (BLTManager.sharedInstance().getState() == 2) {
@@ -483,41 +479,6 @@ public class HomeFragment extends BaseFragment {
 //            // TODO:TEMPHACK BLEManager.sharedInstance().startScanning(getActivity());
 //        }
 //    }
-
-    /**
-     * Requests camera permissions if they are not already granted
-     */
-    private boolean requestCameraPermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (getActivity().checkSelfPermission(Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.CAMERA},
-                        CAMERA_PERMISSION_REQUEST_CODE);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Requests storage permissions if they are not already granted
-     */
-    private boolean requestStoragePermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (getActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        STORAGE_PERMISSION_REQUEST_CODE);
-                return false;
-            }
-        }
-        return true;
-    }
-
 
     /**
      * Action when the user clicks

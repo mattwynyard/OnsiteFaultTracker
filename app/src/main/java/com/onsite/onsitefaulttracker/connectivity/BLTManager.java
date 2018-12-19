@@ -6,6 +6,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.UUID;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -52,6 +55,7 @@ public class BLTManager extends Activity {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    public static final int STATE_TIMEOUT = 4;  // now connected to a remote device
     // Shared Instance, to be initialized once and used throughout the application
     private static BLTManager sSharedInstance;
     // Application context
@@ -106,6 +110,7 @@ public class BLTManager extends Activity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mBluetoothAdapter.setName(BLUETOOTH_ADAPTER_NAME);
         mState = STATE_NONE;
+
     }
     /**
      * Update whether the app is recording or not
@@ -196,6 +201,10 @@ public class BLTManager extends Activity {
         });
     }
 
+    /**
+     * Checks if bluetooth on the adapter is enabled.
+     * @return true/false if blue is enabled.
+     */
     public boolean isBluetoothEnabled() {
         return mBluetoothAdapter.isEnabled();
     }
@@ -203,40 +212,52 @@ public class BLTManager extends Activity {
     /**
      * Enables android app to discover bluetooth devices using a broadcast receiver: DEPRECIATED
      */
-    public void startDiscovery() {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        mApplicationContext.registerReceiver(mReceiver, filter);
-        if (mBluetoothAdapter.isDiscovering()) {
-            // Bluetooth is already in discovery mode, we cancel to restart it again
-            mBluetoothAdapter.cancelDiscovery();
-        }
-        mBluetoothAdapter.startDiscovery();
-    }
 
-    /**
-     * Receives events when a bluetooth device has been discovered: DEPRECIATED
-     */
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "onResumeCalled");
-            String action = intent.getAction();
-            // When discovery finds a device
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Log.i(TAG, "Device name: " + device.getName());
-                Log.i(TAG, "Device address: " + device.getAddress());
-            }
-            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                Log.i(TAG, "onResume: Discovery Started");
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                Log.i(TAG, "onResume: Discovery Finished");
-            }
-        }
-    };
+//    private void enablePIN() {
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
+//    }
+
+//    public void startDiscovery() {
+//        if (mBluetoothAdapter.isDiscovering()) {
+//            //Bluetooth is already in discovery mode, we cancel to restart it again
+//            mBluetoothAdapter.cancelDiscovery();
+//          }
+//        Log.i(TAG, "Starting discovery");
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(BluetoothDevice.ACTION_FOUND);
+//        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
+//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+//        mApplicationContext.registerReceiver(mReceiver, filter);
+//        if (mBluetoothAdapter.isDiscovering()) {
+//            // Bluetooth is already in discovery mode, we cancel to restart it again
+//            mBluetoothAdapter.cancelDiscovery();
+//          }
+        //mBluetoothAdapter.startDiscovery();
+
+//    }
+//    /**
+//     * Receives events when a bluetooth device has been discovered: DEPRECIATED
+//     */
+//    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            Log.i(TAG, "onResumeCalled");
+//            String action = intent.getAction();
+//            // When discovery finds a device
+//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+//                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+//                Log.i(TAG, "Device name: " + device.getName());
+//                Log.i(TAG, "Device address: " + device.getAddress());
+//            }
+//            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+//                Log.i(TAG, "onResume: Discovery Started");
+//            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+//                Log.i(TAG, "onResume: Discovery Finished");
+//            }
+//        }
+//    };
 
     /**
      * Class to handle the accept connection from bluetooth device behaves as server socket
@@ -251,6 +272,7 @@ public class BLTManager extends Activity {
             // Use a temporary object that is later assigned to mmServerSocket
             // because mmServerSocket is final.
             BluetoothServerSocket tmp = null;
+
             mSocketType = secure ? "Secure" : "Insecure";
             // Create a new listening server socket
             Log.i(TAG, "NAME: " + NAME);
@@ -331,7 +353,6 @@ public class BLTManager extends Activity {
                 mReadThread = null;
                 restartBLTConnection();
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
@@ -373,7 +394,7 @@ public class BLTManager extends Activity {
                             System.out.println(line);
                         }
                     }
-                } catch (IOException e) {
+                } catch (IOException e) { //connection was lost
                     e.printStackTrace();
                 } finally {
                     BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());

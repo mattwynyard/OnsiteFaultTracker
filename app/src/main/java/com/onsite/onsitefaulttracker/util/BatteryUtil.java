@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.BatteryManager;
+import android.os.HardwarePropertiesManager;
 
 /**
  * Created by hihi on 6/21/2016.
@@ -84,5 +85,4 @@ public class BatteryUtil {
 
         return ((float)level / (float)scale) * 100.0f;
     }
-
 }

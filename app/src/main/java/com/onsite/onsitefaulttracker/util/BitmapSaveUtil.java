@@ -150,7 +150,6 @@ public class BitmapSaveUtil {
 
                     bitmapToSave.recycle();
 
-
                     fOutputStream.flush();
                     fOutputStream.close();
                     geoTagFile(file.getAbsolutePath(), location);
@@ -177,7 +176,8 @@ public class BitmapSaveUtil {
             return SaveBitmapResult.Save;
         }
     }
-
+                        //--EXIF FUNCTIONS--
+//TODO fix for negative altitudes
     private void geoTagFile(String path, Location location) {
         File f = new File(path);
         long time = location.getTime();
@@ -270,6 +270,4 @@ public class BitmapSaveUtil {
         int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * precision);
         return String.format("%d/1,%d/1,%d/" + precision, degrees, minutes, seconds);
     }
-
-
 } //end class
