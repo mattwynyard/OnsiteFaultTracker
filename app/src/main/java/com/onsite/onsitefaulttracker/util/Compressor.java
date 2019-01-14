@@ -4,6 +4,7 @@ import android.util.Log;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -13,6 +14,9 @@ public class Compressor {
 
     private String[] _files;
     private String _zipFile;
+    private ZipEntry entry;
+    private BufferedInputStream origin;
+    //byte data[]; //= new byte[BUFFER];
 
     public Compressor(String[] files, String zipFile) {
         _files = files;
@@ -20,16 +24,17 @@ public class Compressor {
     }
 
     public void zip() {
+
         try  {
             BufferedInputStream origin = null;
             FileOutputStream dest = new FileOutputStream(_zipFile);
-
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
 
             byte data[] = new byte[BUFFER];
 
-            for(int i=0; i < _files.length; i++) {
+            for(int i = 0; i < _files.length; i++) {
                 Log.v("Compress", "Adding: " + _files[i]);
+
                 FileInputStream fi = new FileInputStream(_files[i]);
                 origin = new BufferedInputStream(fi, BUFFER);
                 ZipEntry entry = new ZipEntry(_files[i].substring(_files[i].lastIndexOf("/") + 1));
@@ -40,12 +45,9 @@ public class Compressor {
                 }
                 origin.close();
             }
-
             out.close();
         } catch(Exception e) {
             e.printStackTrace();
         }
-
     }
-
 }

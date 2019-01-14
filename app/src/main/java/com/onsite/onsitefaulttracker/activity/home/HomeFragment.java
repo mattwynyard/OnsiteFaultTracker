@@ -489,9 +489,9 @@ public class HomeFragment extends BaseFragment {
             BLTManager.sharedInstance().sendMessage("M: No storage permission");
             return;
         }
-        if (TcpConnection.getSharedInstance().isConnected()) {
-            checkForExistingRecords();
-        } else if ((BLTManager.sharedInstance().getState() == 3)) {
+//        if (TcpConnection.getSharedInstance().isConnected()) {
+//            checkForExistingRecords();
+        if ((BLTManager.sharedInstance().getState() == 3)) {
             checkForExistingRecords();
         } else {
             if (TextUtils.isEmpty(SettingsUtil.sharedInstance().getCameraId())) {

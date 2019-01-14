@@ -120,15 +120,18 @@ public class BitmapSaveUtil {
             public void run() {
                 String path = RecordUtil.sharedInstance().getPathForRecord(record);
                 OutputStream fOutputStream;
+                OutputStream rOutputStream;
                 File folder = new File(path);
                 if (!folder.exists()) {
                     Log.e(TAG, "Error saving snap, Record path does not exist");
                     return;
                 }
                 File file = new File(path + "/", filename + ".jpg");
+                File file_resize = new File(path + "/", filename + "R" + ".jpg");
 
                 try {
                     fOutputStream = new FileOutputStream(file);
+                    rOutputStream = new FileOutputStream(file_resize);
 
                     float reductionScale = CalculationUtil.sharedInstance().estimateScaleValueForImageSize();
                     int outWidth = Math.round(bitmapToSave.getHeight() / widthDivisor);
@@ -139,20 +142,30 @@ public class BitmapSaveUtil {
                     if (isLandscape) {
                         matrix.postRotate(-90);
                     }
-                    Bitmap rotatedBitmap = Bitmap.createBitmap(sizedBmp, 0, 0, sizedBmp.getWidth(), sizedBmp.getHeight(), matrix, true);
+                    Bitmap rotatedBitmap = Bitmap.createBitmap(sizedBmp, 0, 0,
+                            sizedBmp.getWidth(), sizedBmp.getHeight(), matrix, true);
+                    Bitmap resizedBitmap = Bitmap.createScaledBitmap(rotatedBitmap,
+                            (int)(sizedBmp.getWidth() * 0.25), (int)(sizedBmp.getHeight() * 0.25), true);
+
                     if (rotatedBitmap == null) {
                         return;
                     }
+
                     sizedBmp.recycle();
 
                     rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil.sharedInstance().estimateQualityValueForImageSize(), fOutputStream);
+                    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil.sharedInstance().estimateQualityValueForImageSize(), rOutputStream);
                     rotatedBitmap.recycle();
+                    resizedBitmap.recycle();
 
                     bitmapToSave.recycle();
 
                     fOutputStream.flush();
                     fOutputStream.close();
+                    rOutputStream.flush();
+                    rOutputStream.close();
                     geoTagFile(file.getAbsolutePath(), location);
+                    geoTagFile(file_resize.getAbsolutePath(), location);
 
                     //send photo name to client
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
@@ -196,6 +209,8 @@ public class BitmapSaveUtil {
                     < 0 ? "W" : "E");
             exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE,
                     formatEXIFDouble(location.getAltitude(), 100));
+            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, location.getAltitude()
+                    < 0 ? "1" : "0");
             exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION,
                     formatEXIFDouble((double)location.getBearing(), 100));
             exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, timeStamp);
@@ -235,7 +250,7 @@ public class BitmapSaveUtil {
             String hour = timestamp.substring(8,10);
             String minutes = timestamp.substring(10,12);
             String seconds = timestamp.substring(12,14);
-            String zone = timestamp.substring(14,20);
+            //String zone = timestamp.substring(14,20);
             s.append(hour);
             s.append(":");
             s.append(minutes);

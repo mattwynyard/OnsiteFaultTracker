@@ -5,6 +5,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,6 +29,8 @@ import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+
+import static android.support.v4.content.ContextCompat.getSystemService;
 
 /**
  * Created by hihi on 6/25/2016.
@@ -89,6 +95,8 @@ public class SubmitFragment extends BaseFragment {
     // Index of the next image to display
     int mDisplayImageIndex;
 
+    private Context mContext;
+
     /**
      * On create view, Override this in each extending fragment to implement initialization for that
      * fragment.
@@ -135,6 +143,7 @@ public class SubmitFragment extends BaseFragment {
      * Action on attached
      */
     public void onAttach(Context context) {
+        mContext = context;
         super.onAttach(context);
 
         mResumed = true;
@@ -192,6 +201,23 @@ public class SubmitFragment extends BaseFragment {
         mCurrentImageView.setImageBitmap(uploadingBitmap);
     }
 
+    private boolean checkWifiConnected() {
+        WifiManager wifiMgr = (WifiManager) mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiMgr.isWifiEnabled()) { // Wi-Fi adapter is ON
+
+            WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
+
+            if( wifiInfo.getNetworkId() == -1 ){
+                return false; // Not connected to an access point
+            }
+            return true; // Connected to an access point
+        }
+        else {
+            return false; // Wi-Fi adapter is OFF
+        }
+    }
+
     /**
      * Action when submitting a record has completed
      */
@@ -199,7 +225,9 @@ public class SubmitFragment extends BaseFragment {
         mPercentageTextView.setVisibility(View.INVISIBLE);
         mRecordSubmittedTextView.setVisibility(View.VISIBLE);
         mSubmittingProgressBar.setVisibility(View.INVISIBLE);
-        mSubmitButton.setVisibility(View.INVISIBLE);
+        //mSubmitButton.setVisibility(View.INVISIBLE);
+        mSubmitButton.setEnabled(true);
+        mSubmitButton.setText("Upload");
 
         mRecord.fileUploadCount = mRecord.photoCount;
         RecordUtil.sharedInstance().saveRecord(mRecord);
@@ -215,10 +243,22 @@ public class SubmitFragment extends BaseFragment {
         // TODO: REMOVE DROP BOX CLIENT REFERENCES
         mRecordFiles = RecordUtil.sharedInstance().getRecordFiles(mRecord.recordId);
 
-        final String fileNames[] = new String[mRecordFiles.length];
-        for (int i = 0; i < mRecordFiles.length; i++) {
-            fileNames[i] = mRecordFiles[i].getAbsolutePath();
+        final String fileNames[] = new String[(mRecordFiles.length / 2) + 1]; // do + 1 first
+        System.out.println(mRecordFiles.length);
+        System.out.println(fileNames.length);
+        final String resizefileNames[] = new String[(mRecordFiles.length / 2) + 1];
+
+        fileNames[0] = mRecordFiles[0].getAbsolutePath();
+        resizefileNames[0] = mRecordFiles[0].getAbsolutePath();
+
+        //splits original
+        for (int i = 1, j = 1 ; i < mRecordFiles.length; i += 2, j++) {
+            fileNames[j] = mRecordFiles[i].getAbsolutePath();
+            //Log.i(TAG, "file:" + fileNames[j]);
+            resizefileNames[j] = mRecordFiles[i + 1].getAbsolutePath();
+            //Log.i(TAG, "resizefile:" + resizefileNames[j]);
         }
+
         SimpleDateFormat dateFormat = new SimpleDateFormat(OUT_RECORD_DATE_FORMAT);
         final String dateString = dateFormat.format(mRecord.creationDate);
         final String outPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath() + "/onsite_record_" + dateString +  ".zip";
