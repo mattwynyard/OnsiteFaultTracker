@@ -188,7 +188,7 @@ public class PreviousRecordsAdapter extends BaseAdapter {
         String recordingTimeString = CalculationUtil.sharedInstance().getDisplayValueFromMilliseconds(item.totalRecordTime) + " recorded";
         holder.mRecordingTimeTextView.setText(recordingTimeString);
 
-        if (item.fileUploadCount >= item.photoCount) {
+        if (item.fileCompressedCount >= item.photoCount) {
             // Item Finished
             holder.mProgressTextView.setText(mContext.getString(R.string.record_progress_finalized));
             holder.mProgressTextView.setTextColor(ContextCompat.getColor(mContext, R.color.finalized_red));

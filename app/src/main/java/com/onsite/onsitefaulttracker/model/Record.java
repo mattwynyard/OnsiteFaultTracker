@@ -32,6 +32,9 @@ public class Record {
     // The number of files that have been uploaded to dropbox already
     public int fileUploadCount;
 
+    // The number of files that have been uploaded to dropbox already
+    public int fileCompressedCount;
+
     // total size in KB that has been uploaded
     public long uploadedSizeKB;
 

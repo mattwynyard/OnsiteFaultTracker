@@ -8,9 +8,9 @@ package com.onsite.onsitefaulttracker;
 public class OnSiteConstants {
 
     // the dropbox app key
-    public static final String DROPBOX_APP_KEY = "u4glxfvcqqio2cn";
+    public static final String DROPBOX_APP_KEY = "eaodzjl31dms7sv";
 
     // the dropbox secret key
-    public static final String DROPBOX_SECRET_KEY = "knvzj6q2416uqu5";
+    public static final String DROPBOX_SECRET_KEY = "pofvgg54j00hv9x";
 
 }

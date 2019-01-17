@@ -121,7 +121,7 @@ public class DropboxClient {
             @Override
             public void run() {
                 try {
-                    DropboxAPI.Entry existingEntry = mDBApi.metadata("/OnSiteApp", 10000, null, false, null);
+                    DropboxAPI.Entry existingEntry = mDBApi.metadata("/2/test", 10000, null, false, null);
                     Log.i(TAG, "initializeOnsiteDropbox,  called metadata");
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
@@ -146,7 +146,7 @@ public class DropboxClient {
      */
     private void createOnSiteAppFolder(final DropboxCallback dropboxCallback) {
         try {
-            mDBApi.createFolder("/OnSiteApp");
+            mDBApi.createFolder("/test");
             ThreadUtil.executeOnMainThread(new Runnable() {
                 @Override
                 public void run() {
@@ -174,7 +174,7 @@ public class DropboxClient {
             @Override
             public void run() {
                 try {
-                    DropboxAPI.Entry existingEntry = mDBApi.metadata("/OnSiteApp/" + record.recordFolderName, 10000, null, false, null);
+                    DropboxAPI.Entry existingEntry = mDBApi.metadata("/OnsiteFaultTracker/" + record.recordFolderName, 10000, null, false, null);
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
@@ -196,7 +196,7 @@ public class DropboxClient {
      */
     private void createRecordFolder(final Record record, final DropboxCallback dropboxCallback) {
         try {
-            mDBApi.createFolder("/OnSiteApp/" + record.recordFolderName);
+            mDBApi.createFolder("/OnsiteFaultTracker/" + record.recordFolderName);
             ThreadUtil.executeOnMainThread(new Runnable() {
                 @Override
                 public void run() {
@@ -239,7 +239,7 @@ public class DropboxClient {
                 try {
                     FileInputStream finStream = new FileInputStream(nextFileToUpload);
 
-                    DropboxAPI.Entry response = mDBApi.putFile("/OnSiteApp/" + record.recordFolderName + "/" + nextFileToUpload.getName(),
+                    DropboxAPI.Entry response = mDBApi.putFile("/OnsiteFaultTracker/" + record.recordFolderName + "/" + nextFileToUpload.getName(),
                             finStream, nextFileToUpload.length(), null, false, null);
 
 
