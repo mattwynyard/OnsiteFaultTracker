@@ -19,16 +19,25 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.dropbox.core.DbxException;
+import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.ListFolderResult;
+import com.dropbox.core.v2.files.Metadata;
+import com.dropbox.core.v2.users.FullAccount;
 import com.onsite.onsitefaulttracker.R;
 import com.onsite.onsitefaulttracker.activity.BaseFragment;
+import com.onsite.onsitefaulttracker.dropbox.UploadCallback;
 import com.onsite.onsitefaulttracker.model.Record;
 import com.onsite.onsitefaulttracker.util.CalculationUtil;
 import com.onsite.onsitefaulttracker.util.Compressor;
 import com.onsite.onsitefaulttracker.util.RecordUtil;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
+import com.onsite.onsitefaulttracker.dropbox.DropboxClient;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 
 import static android.support.v4.content.ContextCompat.getSystemService;
 
@@ -38,7 +47,7 @@ import static android.support.v4.content.ContextCompat.getSystemService;
  * The Submit Fragment, The default fragment of submit Activity.
  * Here the user can submit their record and upload it to drop box
  */
-public class SubmitFragment extends BaseFragment {
+public class SubmitFragment extends BaseFragment implements DropboxClient.DropboxClientListener {
 
     // The tag name for this fragment
     private static final String TAG = SubmitFragment.class.getSimpleName();
@@ -83,19 +92,55 @@ public class SubmitFragment extends BaseFragment {
     // Record that is to be submitted
     private Record mRecord;
 
-    // Array of record files to be uploaded
+//    // Array of record files to be uploaded deprecated
+//    private File[] mRecordFiles;
+
+    // Array of all record files
     private File[] mRecordFiles;
+
+    // Array of thumbnail record files to be uploaded
+    private File[] mResizeFiles;
+
+    // Array of thumbnail record files to be uploaded
+    private File[] mOriginalFiles;
+
+//    // Array of files to upload
+//    private File[] mUploadFiles;
+
+// Array of files to upload
+    ArrayList<File> mUploadFiles;
 
     // Is this fragment currently resumed?
     boolean mResumed;
 
-    // Is it currently submitting the record
+    // Is it currently zipping the record
     boolean mSubmitting;
+
+    // Is it currently uploading the record
+    boolean mUploading;
 
     // Index of the next image to display
     int mDisplayImageIndex;
 
+    // The dropbox client which handles interaction with dropbox
+    private DropboxClient mDropboxClient;
+
+    // Instance of dropbox remote client
+    private DbxClientV2 mDbxClientV2;
+
+    // The dropbox user account
+    private FullAccount account;
+
     private Context mContext;
+
+    //start end time for file upload;
+    private long start, end;
+
+    //cursor to keep track of files that have been compressed
+    private int offset = 0;
+
+
+
 
     /**
      * On create view, Override this in each extending fragment to implement initialization for that
@@ -114,6 +159,7 @@ public class SubmitFragment extends BaseFragment {
             if (args != null) {
                 mRecordId = args.getString(ARG_RECORD_ID);
             }
+
             mDisplayImageIndex = 0;
 
             mNameTextView = view.findViewById(R.id.record_name_text_view);
@@ -150,18 +196,41 @@ public class SubmitFragment extends BaseFragment {
     }
 
     /**
+     * Action on resume
+     */
+    public void onResume() {
+        Log.i(TAG, "Submit resumed");
+        super.onResume();
+
+        if (mDropboxClient == null) {
+            mDropboxClient = new DropboxClient(getActivity());
+        } else {
+            mDropboxClient.updateActivity(getActivity());
+        }
+        mDropboxClient.setDropboxClientListener(this);
+
+        //mDropboxClient.onDropboxActivityResumed();
+
+    }
+    /**
      * Action on detach
      */
     public void onDetach() {
         super.onDetach();
         mResumed = false;
         mSubmitting = false;
+        mUploading = false;
     }
 
     /**
      * Update the ui with the record details
      */
     private void updateUIValues() {
+        if (mRecord.fileCompressedCount == 0) {
+            mSubmitButton.setText("ZIP RECORD");
+        } else {
+            mSubmitButton.setText("UPLOAD");
+        }
         mNameTextView.setText(mRecord.recordName);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd MMMM yyyy, h:mm a");
         mDateTextView.setText(String.format(getString(R.string.submit_created_date), simpleDateFormat.format(mRecord.creationDate)));
@@ -173,8 +242,11 @@ public class SubmitFragment extends BaseFragment {
         mPercentageTextView.setText(String.format("%.0f%%", percentage));
 
         // If the submission is already complete show that
+//        if (mRecord.fileCompressedCount >= mRecord.photoCount) {
+//            onSubmissionComplete();
+//        }
         if (mRecord.fileUploadCount >= mRecord.photoCount) {
-            onSubmissionComplete();
+            onUploadComplete();
         }
     }
 
@@ -218,6 +290,162 @@ public class SubmitFragment extends BaseFragment {
         }
     }
 
+    private void uploadNextFile() {
+        if (!mResumed) {
+            // Don't attempt to upload a file if the fragment is paused.
+            return;
+        }
+        //TODO temp hack array needs to be changed to stored proprty
+        if (mResizeFiles == null) { //handles null pointer if user does not upload after compress
+            //should be changed to a stored property
+            splitRecordFiles();
+        }
+        // If all files have already been uploaded dont upload another one
+        if (mRecord.fileUploadCount >= mResizeFiles.length) {
+            mSubmitting = false;
+            onUploadComplete();
+            //return;
+       }
+//       if (mCurrentImageView.getVisibility() != View.VISIBLE) {
+//            mCurrentImageView.setVisibility(View.VISIBLE);
+//        }
+        final String dateString = mRecord.recordFolderName;
+        final String outPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath() + "/onsite_record" + dateString + "_R.zip";
+        mUploadFiles = new ArrayList<>();
+        mUploadFiles.add(new File(outPath));
+        start = System.currentTimeMillis();
+        mDropboxClient.uploadNextFile(mRecord, mUploadFiles, new UploadCallback() {
+            @Override
+            public void onSuccess(Object object) {
+                end = System.currentTimeMillis();
+                ThreadUtil.executeOnNewThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        RecordUtil.sharedInstance().saveRecord(mRecord);
+                    }
+                });
+
+                // If the fragment is not active just return
+                if (!mResumed) {
+                    return;
+                }
+
+                updateUIValues();
+//                mCurrentImageView.setImageBitmap(null);
+//                if (uploadingBitmap != null) {
+//                    uploadingBitmap.recycle();
+//                }
+
+                //if (mRecord.fileUploadCount < mRecordFiles.length) {
+                    //uploadNextFile();
+                //} else {
+                    mSubmitting = false;
+                    mRecord.fileUploadCount = mResizeFiles.length;
+                    onUploadComplete();
+                //}
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                mSubmitting = false;
+                // If the fragment is not active just return
+                if (!mResumed) {
+                    return;
+                }
+
+                new AlertDialog.Builder(getActivity())
+                        .setTitle(getString(R.string.record_submit_failed_title))
+                        .setMessage(getString(R.string.record_submit_failed_message))
+                        .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                            @Override
+                            public void onCancel(DialogInterface dialog) {
+                                getActivity().onBackPressed();
+                            }
+                        })
+                        .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                            @Override
+                            public void onDismiss(DialogInterface dialog) {
+                                getActivity().onBackPressed();
+                            }
+                        })
+                        .setPositiveButton(getString(android.R.string.ok), null)
+                        .show();
+            }
+
+            @Override
+            public void onFolderExists() {
+
+            }
+        });
+    }
+
+    /**
+     * Start uploading the record to dropbox
+     */
+    private void startUploadingRecord() {
+        mSubmittingProgressBar.setVisibility(View.VISIBLE);
+        mPercentageTextView.setVisibility(View.VISIBLE);
+        mSubmitButton.setEnabled(false);
+        mSubmitButton.setText(getString(R.string.submitting));
+        mSubmitting = true;
+        mRecordFiles = RecordUtil.sharedInstance().getRecordFiles(mRecord.recordId);
+
+        mDropboxClient.confirmOrCreateFolder(mDbxClientV2, mRecord, new UploadCallback() {
+
+            @Override
+            public void onSuccess(Object object) {
+                if (mRecordFiles != null && mRecordFiles.length > 0) {
+                    uploadNextFile();
+                }
+            }
+            @Override
+            public void onFolderExists() {
+                Log.e(TAG, "Folder already exists");
+                uploadNextFile();
+            }
+            @Override
+            public void onFailure(String errorMessage) {
+                Log.e(TAG, "Error creating folder on dropbox: " + errorMessage);
+            }
+        });
+
+    }
+
+    private void onUploadClicked() {
+
+        if (checkWifiConnected()) {
+            Log.i(TAG, "Wifi connected");
+            mSubmittingProgressBar.setVisibility(View.VISIBLE);
+            mPercentageTextView.setVisibility(View.VISIBLE);
+            mSubmitting = true;
+            //mSubmitButton.setText("Uploading");
+            if (mDropboxClient == null) {
+                mDropboxClient = new DropboxClient(getActivity());
+            } else {
+                mDropboxClient.updateActivity(getActivity());
+            }
+            mDropboxClient.setDropboxClientListener(this);
+            try {
+                mDropboxClient.authenticateDropBoxUser();
+            } catch (DbxException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.i(TAG, "Wifi not connected");
+            //onUploadComplete();
+        }
+    }
+
+    private void onUploadComplete() {
+        Log.i(TAG, "Upload time: " + ((end - start) / 1000) + "s");
+        mPercentageTextView.setVisibility(View.INVISIBLE);
+        mRecordSubmittedTextView.setVisibility(View.VISIBLE);
+        mSubmittingProgressBar.setVisibility(View.INVISIBLE);
+        mSubmitButton.setVisibility(View.INVISIBLE);
+        mRecord.fileUploadCount = mRecord.photoCount;
+        RecordUtil.sharedInstance().saveRecord(mRecord);
+    }
+
     /**
      * Action when submitting a record has completed
      */
@@ -229,87 +457,151 @@ public class SubmitFragment extends BaseFragment {
         mSubmitButton.setEnabled(true);
         mSubmitButton.setText("Upload");
 
-        mRecord.fileUploadCount = mRecord.photoCount;
+        mRecord.fileCompressedCount = mRecord.photoCount;
         RecordUtil.sharedInstance().saveRecord(mRecord);
     }
 
+    private void splitRecordFiles() {
+        mOriginalFiles = new File[(mRecordFiles.length / 2) + 1];
+        mResizeFiles = new File[(mRecordFiles.length / 2) + 1];
+        mOriginalFiles[0] = new File(mRecordFiles[0].getAbsolutePath());
+        mResizeFiles[0] = new File(mRecordFiles[0].getAbsolutePath());
+        //splits original array into two arrays
+        for (int i = 1, j = 1; i < mRecordFiles.length; i += 2, j++) {
+            mOriginalFiles[j] = new File(mRecordFiles[i].getAbsolutePath());
+            mResizeFiles[j] = new File(mRecordFiles[i + 1].getAbsolutePath());
+        }
+    }
+
     /**
-     * Action when the user clicks on submit,  initiate the dropbox api
-     * and start uploading the record
+     * Action when the user clicks on submit, initiate photo compression and zip files
+     *
      */
     private void onSubmitClicked() {
         mSubmitting = true;
 
-        // TODO: REMOVE DROP BOX CLIENT REFERENCES
-        mRecordFiles = RecordUtil.sharedInstance().getRecordFiles(mRecord.recordId);
+        if (mSubmitButton.getText() == "UPLOAD") {
+            Log.i(TAG, "Upload clicked");
+            onUploadClicked();
+        } else {
+            mRecordFiles = RecordUtil.sharedInstance().getRecordFiles(mRecord.recordId);
+            splitRecordFiles();
+            SimpleDateFormat dateFormat = new SimpleDateFormat(OUT_RECORD_DATE_FORMAT);
+            final String dateString = dateFormat.format(mRecord.creationDate);
+            final String outOriginalPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath() + "/onsite_record_" + dateString + ".zip";
+            final String outResizePath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath() + "/onsite_record" + dateString + "_R";
 
-        final String fileNames[] = new String[(mRecordFiles.length / 2) + 1]; // do + 1 first
-        System.out.println(mRecordFiles.length);
-        System.out.println(fileNames.length);
-        final String resizefileNames[] = new String[(mRecordFiles.length / 2) + 1];
-
-        fileNames[0] = mRecordFiles[0].getAbsolutePath();
-        resizefileNames[0] = mRecordFiles[0].getAbsolutePath();
-
-        //splits original
-        for (int i = 1, j = 1 ; i < mRecordFiles.length; i += 2, j++) {
-            fileNames[j] = mRecordFiles[i].getAbsolutePath();
-            //Log.i(TAG, "file:" + fileNames[j]);
-            resizefileNames[j] = mRecordFiles[i + 1].getAbsolutePath();
-            //Log.i(TAG, "resizefile:" + resizefileNames[j]);
-        }
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat(OUT_RECORD_DATE_FORMAT);
-        final String dateString = dateFormat.format(mRecord.creationDate);
-        final String outPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath() + "/onsite_record_" + dateString +  ".zip";
-
-        mSubmittingProgressBar.setVisibility(View.VISIBLE);
-        mSubmitButton.setEnabled(false);
-        ThreadUtil.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-                Log.i(TAG, "START ZIP");
-                Compressor compressor = new Compressor(fileNames, outPath);
-                compressor.zip();
-                Log.i(TAG, "END ZIP");
-                ThreadUtil.executeOnMainThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mSubmitting = false;
-                        onSubmissionComplete();
+            mSubmittingProgressBar.setVisibility(View.VISIBLE);
+            mSubmitButton.setEnabled(false);
+            ThreadUtil.executeOnNewThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.i(TAG, "START ZIP");
+                    Compressor cOriginal = compress(mOriginalFiles, outOriginalPath);
+                    cOriginal.zip();
+                    Compressor cResize = compress(mResizeFiles, outResizePath);
+                    while (mResizeFiles.length > offset) {
+                        try {
+                            offset = cResize.zip(offset);
+                            if (offset == -1) { //error compressing files
+                                throw new Exception();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Log.i(TAG, "ZIP FAILED");
+                            ThreadUtil.executeOnMainThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mSubmitting = false;
+                                    //onSubmissionFailed();
+                                }
+                            });
+                        }
                     }
-                });
-            }
-        });
-
-        ThreadUtil.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-                while (mSubmitting)
-                {
+                    Log.i(TAG, "END ZIP");
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            displayNextImage();
+                            mSubmitting = false;
+                            onSubmissionComplete();
                         }
                     });
-                    try
-                    {
-                        Thread.sleep(100);
-                    }
-                    catch (Exception ex)
-                    {
-
-                    }
                 }
-                ThreadUtil.executeOnMainThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mCurrentImageView.setVisibility(View.INVISIBLE);
+            });
+            ThreadUtil.executeOnNewThread(new Runnable() {
+                @Override
+                public void run() {
+                    while (mSubmitting) {
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                displayNextImage();
+                            }
+                        });
+                        try {
+                            Thread.sleep(100);
+                        } catch (Exception ex) {
+                        }
                     }
-                });
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mCurrentImageView.setVisibility(View.INVISIBLE);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    public Compressor compress(File[] files, String path) {
+        Compressor c = new Compressor(files, path);
+        return c;
+    }
+
+    public void listDbxFolders(DbxClientV2 client) {
+        final DbxClientV2 mDbxClientV2 = client;
+        ListFolderResult folders = null;
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ListFolderResult result = mDbxClientV2.files().listFolder("");
+                    while (true) {
+                        for (Metadata metadata : result.getEntries()) {
+                            System.out.println(metadata.getPathLower());
+                        }
+                        if (!result.getHasMore()) {
+                            break;
+                        }
+                        result = mDbxClientV2.files().listFolderContinue(result.getCursor());
+                    }
+                } catch (DbxException e) {
+                    e.printStackTrace();
+                }
             }
         });
+    }
+
+    /**
+     * Called when dropbox has been authenticated,
+     * start uploading the record
+     */
+    @Override
+    public void onDropboxAuthenticated(FullAccount result, DbxClientV2 client) {
+        Log.i(TAG, "Drop box authenticated");
+        FullAccount account = result;
+        mDbxClientV2 = client;
+
+        startUploadingRecord();
+    }
+
+    /**
+     * Called when dropbox fails / has an error initializing
+     */
+    @Override
+    public void onDropboxFailed() {
+
     }
 
     /**
