@@ -1,41 +1,34 @@
 package com.onsite.onsitefaulttracker.dropbox;
 
 import android.app.Activity;
-import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
-import android.os.AsyncTask;
-import android.widget.Toast;
 
-import com.dropbox.client2.session.TokenPair;
+import com.dropbox.client2.ProgressListener;
 import com.dropbox.core.DbxException;
-import com.dropbox.core.DbxRequestConfig;
-import com.dropbox.core.http.HttpRequestor;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.client2.DropboxAPI;
 import com.dropbox.client2.android.AndroidAuthSession;
-import com.dropbox.client2.exception.DropboxException;
-import com.dropbox.client2.session.AppKeyPair;
 
+import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.FileMetadata;
-import com.dropbox.core.v2.files.ListFolderResult;
-import com.dropbox.core.v2.files.Metadata;
-import com.dropbox.core.v2.files.UploadBuilder;
-import com.dropbox.core.v2.files.UploadSessionStartUploader;
-import com.dropbox.core.v2.files.UploadUploader;
+import com.dropbox.core.v2.files.UploadSessionCursor;
+import com.dropbox.core.v2.files.UploadSessionFinishArg;
+import com.dropbox.core.v2.files.UploadSessionFinishBatchJobStatus;
+import com.dropbox.core.v2.files.UploadSessionFinishBatchLaunch;
 import com.dropbox.core.v2.files.WriteMode;
 import com.dropbox.core.v2.users.FullAccount;
-import com.dropbox.core.android.Auth;
-import com.onsite.onsitefaulttracker.OnSiteConstants;
-import com.onsite.onsitefaulttracker.dropboxapi.DropboxCallback;
 import com.onsite.onsitefaulttracker.model.Record;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class DropboxClient {
 
@@ -60,6 +53,9 @@ public class DropboxClient {
 
     private boolean mConnected = false; // connected to dropbox
 
+    private static final long CHUNKED_UPLOAD_CHUNK_SIZE =  1 * (1024 * 1024);// 1L << 20; // 10MiB  = 10 * 2^20
+    private static final int CHUNKED_UPLOAD_MAX_ATTEMPTS = 5;
+
     // And later in some initialization function:
     //AppKeyPair mAppKeys = new AppKeyPair(OnSiteConstants.DROPBOX_APP_KEY, OnSiteConstants.DROPBOX_SECRET_KEY);
     //AndroidAuthSession mSession;
@@ -70,6 +66,7 @@ public class DropboxClient {
     public interface DropboxClientListener {
         void onDropboxAuthenticated(FullAccount result, DbxClientV2 client);
         void onDropboxFailed();
+        void uploadProgress(long buffer);
     }
 
 
@@ -119,11 +116,21 @@ public class DropboxClient {
                 }
                 @Override
                 public void onError(Exception e) {
+
                     Log.e(TAG, "Failed to login.", e);
                 }
             }).execute();
         }
     }
+
+//    ProgressListener progressListener = new ProgressListener() {
+//        long uploadedBytes = 0;
+//        @Override
+//        public void onProgress(long l) {
+//            printProgress(l + uploadedBytes, size);
+//            if (l == CHUNKED_UPLOAD_CHUNK_SIZE) uploadedBytes += CHUNKED_UPLOAD_CHUNK_SIZE;
+//        }
+//    };
 
     public void confirmOrCreateFolder(final DbxClientV2 client, final Record record, final UploadCallback callback) {
         ThreadUtil.executeOnNewThread(new Runnable() {
@@ -150,21 +157,193 @@ public class DropboxClient {
         });
     }
 
-    public void uploadBatchFile(final Record record, final ArrayList<File> recordFiles, final UploadCallback Callback) {
-        final File nextFileToUpload = recordFiles.get(0);
-        if (nextFileToUpload == null) {
-            // TODO: react accordingly
-            ThreadUtil.executeOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    Callback.onFailure("No files to upload");
-                }
-            });
+
+
+    private void printProgress(long uploaded, long size) {
+        System.out.printf("Uploaded %12d / %12d bytes (%5.2f%%)\n", uploaded, size, 100 * (uploaded / (double) size));
+    }
+
+    public void uploadChunkedFile(final Record record, final ArrayList<String> _files, final UploadCallback Callback) {
+        final File f = new File(_files.get(0));
+        final long _size = f.length();
+        System.err.println("File size: " + _size);
+
+        if (_size < CHUNKED_UPLOAD_CHUNK_SIZE) {
+            System.err.println("File too small, use upload() instead.");
+            uploadNextFile(record, f, Callback);
             return;
         }
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
+                long uploaded = 0L;
+                String sessionId = null;
+                long offset = 0L;
+                boolean close = false;
+                UploadSessionCursor cursor = null;
+                mDropboxClientListener.uploadProgress(offset);
+                try {
+                    InputStream in = new FileInputStream(f);
+
+                    if (sessionId == null) {
+                        sessionId = mDbxClient.files().uploadSessionStart(close)
+                                .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE).getSessionId();
+                        offset += CHUNKED_UPLOAD_CHUNK_SIZE;
+                        mDropboxClientListener.uploadProgress(offset);
+
+
+                    }
+                    cursor = new UploadSessionCursor(sessionId, offset);
+
+                    while ((_size - offset) > CHUNKED_UPLOAD_CHUNK_SIZE) {
+
+                        mDbxClient.files().uploadSessionAppendV2(cursor)
+                                .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE);
+                        offset += CHUNKED_UPLOAD_CHUNK_SIZE;
+                        cursor = new UploadSessionCursor(sessionId, offset);
+                        mDropboxClientListener.uploadProgress(offset);
+
+                    }
+                    long remaining = _size - offset;
+                    offset += remaining;
+                    mDropboxClientListener.uploadProgress(offset);
+                    CommitInfo commitInfo = CommitInfo.newBuilder("/" +
+                            record.recordFolderName + "/" + f.getName())
+                            .withMode(WriteMode.OVERWRITE)
+                            .withClientModified(new Date(f.lastModified()))
+                            .build();
+                    FileMetadata metadata = mDbxClient.files().uploadSessionFinish(cursor, commitInfo)
+                            .uploadAndFinish(in, remaining);
+                    mDropboxClientListener.uploadProgress(offset);
+                    System.out.println(metadata.toStringMultiline());
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onSuccess(null);
+                        }
+                    });
+                } catch (FileNotFoundException e){
+                    e.printStackTrace();
+                } catch (DbxException e) {
+                    Log.e(TAG, "DBx exception: " + e.getLocalizedMessage());
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onFailure("Failed to commit batch files");
+                        }
+                    });
+                } catch (IOException ioEx) {
+                    Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onFailure("Failed to open file stream");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void uploadBatchFile(final Record record, final ArrayList<String> recordFiles, final UploadCallback Callback) {
+
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+
+                List<UploadSessionFinishArg> entries = new ArrayList<>();
+                String sessionId = null;
+                long offset = 0;
+                boolean close = false;
+                UploadSessionCursor cursor = null;
+                for (int i = 0; i < recordFiles.size(); i++) {
+                    try {
+                        File f = new File(recordFiles.get(i));
+                        InputStream in = new FileInputStream(f);
+                        sessionId = mDbxClient.files().uploadSessionStart(true)
+                                .uploadAndFinish(in).getSessionId();
+                        offset = f.length();
+                        cursor = new UploadSessionCursor(sessionId, offset);
+                        CommitInfo commitInfo = CommitInfo.newBuilder("/" +
+                                record.recordFolderName + "/" + f.getName())
+                                .withMode(WriteMode.OVERWRITE)
+                                .withClientModified(new Date(f.lastModified()))
+                                .build();
+                        //System.out.println(commitInfo.toStringMultiline());
+                        UploadSessionFinishArg arg = new UploadSessionFinishArg(cursor, commitInfo);
+                        //System.out.println(arg.toStringMultiline());
+                        entries.add(arg);
+                    } catch (IOException ioEx) {
+                        Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onFailure("Failed to open file stream");
+                            }
+                        });
+                    } catch (DbxException e) {
+                        Log.e(TAG, "DBx exception: " + e.getLocalizedMessage());
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onFailure("Failed to commit batch files");
+                            }
+                        });
+                    }
+                }
+                //now batch commit
+                UploadSessionFinishBatchLaunch result = null;
+                try {
+                    result = mDbxClient.files().uploadSessionFinishBatch(entries);
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                           Callback.onSuccess(null);
+                        }
+                    });
+                } catch (DbxException e) {
+                    e.printStackTrace();
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onFailure("Failed to upload batch files");
+                        }
+                    });
+                }
+//                try {
+//                while (mDbxClient.files().uploadSessionFinishBatchCheck(result.getAsyncJobIdValue()).isInProgress()) {
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        // TODO Auto-generated catch block
+//                        e.printStackTrace();
+//                        ThreadUtil.executeOnMainThread(new Runnable() {
+//                            @Override
+//                            public void run() {
+//                                Callback.onFailure("Thread error");
+//                            }
+//                        });
+//                    }
+//                }
+
+//                UploadSessionFinishBatchJobStatus status = null;
+//                status = mDbxClient.files().uploadSessionFinishBatchCheck(result.getAsyncJobIdValue());
+//                    System.out.println(status.toString());
+//                    ThreadUtil.executeOnMainThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Callback.onSuccess(null);
+//                        }
+//                    });
+//                } catch (DbxException e) {
+//                    e.printStackTrace();
+//                    ThreadUtil.executeOnMainThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Callback.onFailure("Failed to finalise batch job");
+//                        }
+//                    });
+//                }
 
             }
         });
@@ -175,10 +354,10 @@ public class DropboxClient {
      *
      * @param record
      */
-    public void uploadNextFile(final Record record, final ArrayList<File> recordFiles, final UploadCallback Callback) {
+    public void uploadNextFile(final Record record, final File _file, final UploadCallback Callback) {
         //final int nextFileIndex = record.fileUploadCount;
         //final File nextFileToUpload = nextFileIndex < recordFiles.length ? recordFiles[nextFileIndex] : null;
-        final File nextFileToUpload = recordFiles.get(0);
+        final File nextFileToUpload = _file;
         if (nextFileToUpload == null) {
             // TODO: react accordingly
             ThreadUtil.executeOnMainThread(new Runnable() {
@@ -189,7 +368,6 @@ public class DropboxClient {
             });
             return;
         }
-
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
@@ -201,13 +379,6 @@ public class DropboxClient {
                             record.recordFolderName + "/" + nextFileToUpload.getName())
                             .withMode(WriteMode.OVERWRITE)
                             .uploadAndFinish(finStream);
-
-                    UploadSessionStartUploader uploader = mDbxClient.files().uploadSessionStart();
-                    //String sessionId = uploader.;
-
-                    //mDbxClient.files().
-                    //UploadSessionStartUploader session = mDbxClient.files().uploadSessionStart();
-                    //session.getBody().write(first_chunk_of_upload)
 
                     if (response != null && !TextUtils.isEmpty(response.getRev())) {
                         Log.i(TAG, "File Uploaded");

@@ -44,4 +44,10 @@ public class Record {
     // The total recording time in milliseconds
     public long totalRecordTime;
 
+    // The total size of the compressed thumbnail files
+    public long totalUploadSizeKB;
+
+    // The total time to upload files to dropbox
+    public long uploadTime;
+
 }
