@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
@@ -118,6 +119,9 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
 
     // Is it currently uploading the record
     boolean mUploading;
+
+    // Thumbnails have been uploaded to dropbox
+    boolean mUploaded;
 
     // Index of the next image to display
     int mDisplayImageIndex;
@@ -250,9 +254,9 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
 //        if (mRecord.fileCompressedCount >= mRecord.photoCount) {
 //            onSubmissionComplete();
 //        }
-        if (mRecord.fileUploadCount >= mRecord.photoCount) {
-            onUploadComplete();
-        }
+//        if (mRecord.fileUploadCount >= mRecord.photoCount) {
+//            onUploadComplete();
+//        }
     }
 
     /**
@@ -272,12 +276,13 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
             mDisplayImageIndex = 0;
             return;
         }
-
         final Bitmap uploadingBitmap = mRecordFiles[mDisplayImageIndex].getName().contains(".jpg") ?
                 BitmapFactory.decodeFile(mRecordFiles[mDisplayImageIndex].getAbsolutePath()) : null;
         mCurrentImageView.setImageBitmap(uploadingBitmap);
     }
-
+    /**
+     *
+     */
     private boolean checkWifiConnected() {
         WifiManager wifiMgr = (WifiManager) mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiMgr.isWifiEnabled()) { // Wi-Fi adapter is ON
@@ -292,7 +297,9 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
             return false; // Wi-Fi adapter is OFF
         }
     }
-
+    /**
+     *
+     */
     private void uploadNextFile() {
         if (!mResumed) {
             // Don't attempt to upload a file if the fragment is paused.
@@ -301,7 +308,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         //TODO temp hack array needs to be changed to stored property
         if (mResizeFiles == null) { //handles null pointer if user does not upload after compress
             //should be changed to a stored property
-            splitRecordFiles();
+            //splitRecordFiles();
         }
         final String dateString = mRecord.recordFolderName;
         final String outPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath()
@@ -310,25 +317,20 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mDropboxClient.uploadChunkedFile(mRecord, mUploadFiles, new UploadCallback() {
             @Override
             public void onSuccess(Object object) {
-                end = System.currentTimeMillis();
-                ThreadUtil.executeOnNewThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        RecordUtil.sharedInstance().saveRecord(mRecord);
-                    }
-                });
-
                 // If the fragment is not active just return
                 if (!mResumed) {
                     return;
                 }
                 //updateUIValues();
-                mUploading = false;
+                mUploading = true;
+                mUploaded = false;
+                end = System.currentTimeMillis();
                 onUploadComplete();
             }
             @Override
             public void onFailure(String errorMessage) {
                 mUploading = false;
+                mUploaded = false;
                 // If the fragment is not active just return
                 if (!mResumed) {
                     return;
@@ -351,10 +353,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                         .setPositiveButton(getString(android.R.string.ok), null)
                         .show();
             }
-            @Override
-            public void onFolderExists() {
-
-            }
         });
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
@@ -369,7 +367,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                             float percentage = ((float)totalBytesUploaded / (float)mRecord.totalUploadSizeKB) * 100.0f;
                             percentage = Math.min(100.0f, percentage);
                             mPercentageTextView.setText(String.format("%.0f%%", percentage));
-
                         }
                     });
                     try {
@@ -395,7 +392,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mPercentageTextView.setVisibility(View.VISIBLE);
         mSubmitButton.setEnabled(false);
         mSubmitButton.setText(getString(R.string.submitting));
-        mSubmitting = true;
+        mUploading = true;
         mRecordFiles = RecordUtil.sharedInstance().getRecordFiles(mRecord.recordId);
         mDropboxClient.confirmOrCreateFolder(mDbxClientV2, mRecord, new UploadCallback() {
             @Override
@@ -405,20 +402,17 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                 }
             }
             @Override
-            public void onFolderExists() {
-                Log.e(TAG, "Folder already exists");
-                uploadNextFile();
-            }
-            @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, "Error creating folder on dropbox: " + errorMessage);
+                return;
+                //uploadNextFile();
             }
         });
-
     }
-
+    /**
+     *
+     */
     private void onUploadClicked() {
-
         if (checkWifiConnected()) {
             Log.i(TAG, "Wifi connected");
             mUploading = true;
@@ -445,14 +439,35 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
             }
         } else {
             Log.i(TAG, "Wifi not connected");
-            //onUploadComplete();
+            //TODO make alert message wifi is not connected
         }
     }
-
+    /**
+     *
+     */
     private void onUploadComplete() {
-        Log.i(TAG, "Upload time: " + ((end - start) / 1000) + "s");
+        if (!mUploaded) {
+            mDropboxClient.uploadNextFile(mRecord, mRecordFiles[0], new UploadCallback() {
+                @Override
+                public void onSuccess(Object object) {
+                    //RecordUtil.sharedInstance().saveRecord(mRecord);
 
-        //mPercentageTextView.setText(String.format("%.0f%%", 100));
+                    onUploadComplete();
+                }
+                @Override
+                public void onFailure(String errorMessage) {
+                    Log.e(TAG, "Metadata upload failed");
+                    mUploaded = false;
+                    mUploading = false;
+                }
+//                @Override
+//                public void onFolderExists() {
+//                }
+            });
+        }
+        mUploaded = true;
+        mUploading = false;
+        mSubmitting = false;
         mPercentageTextView.setVisibility(View.INVISIBLE);
         mRecordSubmittedTextView.setVisibility(View.VISIBLE);
         mRecordSubmittedTextView.setText("UPLOAD COMPLETE");
@@ -463,15 +478,11 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mRecord.uploadTime = (end - start) / 1000;
         RecordUtil.sharedInstance().saveRecord(mRecord);
     }
-
     /**
      * Action when submitting a record has completed
      */
     private void onSubmissionComplete() {
-
-        Log.i(TAG, "Original Bytes uploaded: " + String.valueOf(totalBytesOriginal));
-        Log.i(TAG, "Resize Bytes uploaded: " + String.valueOf(totalBytesResize));
-
+        mSubmitting = false;
         mPercentageTextView.setVisibility(View.INVISIBLE);
         mRecordSubmittedTextView.setVisibility(View.VISIBLE);
         mSubmittingProgressBar.setVisibility(View.INVISIBLE);
@@ -480,20 +491,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mSubmitButton.setText("UPLOAD");
         mRecord.fileCompressedCount = mRecord.photoCount;
         RecordUtil.sharedInstance().saveRecord(mRecord);
-    }
-
-    private void splitRecordFiles() {
-        mOriginalFiles = new File[(mRecordFiles.length / 2) + 1];
-        mResizeFiles = new File[(mRecordFiles.length / 2) + 1];
-        mOriginalFiles[0] = new File(mRecordFiles[0].getAbsolutePath());
-        mResizeFiles[0] = new File(mRecordFiles[0].getAbsolutePath());
-        //splits original array into two arrays
-        for (int i = 1, j = 1; i < mRecordFiles.length; i += 2, j++) {
-            mOriginalFiles[j] = new File(mRecordFiles[i].getAbsolutePath());
-            mResizeFiles[j] = new File(mRecordFiles[i + 1].getAbsolutePath());
-        }
-        //mOriginalFiles[mRecordFiles.length] = new File(mRecordFiles[0].getAbsolutePath());
-
+        RecordUtil.sharedInstance().updateRecordCount();
     }
     /**
      * Action when the user clicks on submit, initiate photo compression and zip files
@@ -513,7 +511,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                     .getAbsolutePath() + "/onsite_record_" + mRecord.recordFolderName;
             final String outResizePath = RecordUtil.sharedInstance().getBaseFolder()
                     .getAbsolutePath() + "/onsite_record_" + mRecord.recordFolderName + "_R";
-
             mSubmittingProgressBar.setVisibility(View.VISIBLE);
             mSubmitButton.setEnabled(false);
             final Compressor cOriginal = compress(mOriginalFiles, outOriginalPath);
@@ -533,7 +530,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            mSubmitting = false;
+
                             mRecord.totalUploadSizeKB = totalBytesResize / 1024;
                             RecordUtil.sharedInstance().saveRecord(mRecord);
                             onSubmissionComplete();
@@ -549,7 +546,8 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                             @Override
                             public void run() {
                                 displayNextImage();
-                                final long remainingKB = mRecord.totalSizeKB - ((totalBytesOriginal
+                                final long remainingKB = (mRecord.totalSizeKB - mRecordFiles[0].length())
+                                        - ((totalBytesOriginal
                                         + totalBytesResize) / 1024);
                                 mRemainingTextView.setText(String.format(getString(R.string.submit_remaining_size),
                                         CalculationUtil.sharedInstance().getDisplayValueFromKB(Math.max(remainingKB, 0))));
@@ -565,33 +563,30 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         }
     }
 
+    /**
+     * Splits orginal array of photos into two arrays. One containing full size photos
+     * (mOriginalFiles) and the other (mResizeFiles) containing thumbnails. Ignores .rec file
+     */
+    private void splitRecordFiles() {
+        mOriginalFiles = new File[(mRecordFiles.length / 2)];
+        mResizeFiles = new File[(mRecordFiles.length / 2)];
+        for (int i = 1, j = 0; i < mRecordFiles.length; i += 2, j++) {
+            mOriginalFiles[j] = new File(mRecordFiles[i].getAbsolutePath());
+            mResizeFiles[j] = new File(mRecordFiles[i + 1].getAbsolutePath());
+        }
+        //mOriginalFiles[mRecordFiles.length] = new File(mRecordFiles[0].getAbsolutePath());
+    }
+
+    /**
+     * Intialises a new Compressor object at set files to compress and path to save zip file to
+     *
+     * @param files - array of files to compress
+     * @param path - file path to save zipped file to
+     * @return - new Compressor object
+     */
     public Compressor compress(File[] files, String path) {
         Compressor c = new Compressor(files, path);
         return c;
-    }
-
-    public void listDbxFolders(DbxClientV2 client) {
-        final DbxClientV2 mDbxClientV2 = client;
-        ListFolderResult folders = null;
-        ThreadUtil.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ListFolderResult result = mDbxClientV2.files().listFolder("");
-                    while (true) {
-                        for (Metadata metadata : result.getEntries()) {
-                            System.out.println(metadata.getPathLower());
-                        }
-                        if (!result.getHasMore()) {
-                            break;
-                        }
-                        result = mDbxClientV2.files().listFolderContinue(result.getCursor());
-                    }
-                } catch (DbxException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 
 //--------------------------- OVERRIDE METHODS ----------------------------------//
@@ -624,6 +619,8 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
     @Override
     public void onDropboxAuthenticated(FullAccount result, DbxClientV2 client) {
         Log.i(TAG, "Drop box authenticated");
+        Toast.makeText(getActivity(), "Succesfully connected to dropbox!",
+                Toast.LENGTH_LONG).show();
         FullAccount account = result;
         mDbxClientV2 = client;
         startUploadingRecord();
@@ -634,7 +631,9 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
      */
     @Override
     public void onDropboxFailed() {
-
+        Log.i(TAG, "Drop box failed to authenticate");
+        Toast.makeText(getActivity(), "ERROR: Failed to connect to dropbox!",
+                Toast.LENGTH_LONG).show();
     }
 
     /**
@@ -645,7 +644,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
      * @return true if activity should handle the back action, otherwise false
      */
     public boolean onBackClicked() {
-        if (mSubmitting) {
+        if (mSubmitting || mUploading) {
             new AlertDialog.Builder(getActivity())
                     .setTitle(getString(R.string.submitting_back_dialog_title))
                     .setMessage(getString(R.string.submitting_back_dialog_message))
@@ -653,6 +652,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             mSubmitting = false;
+                            mUploading = false;
                             getActivity().onBackPressed();
                         }
                     })

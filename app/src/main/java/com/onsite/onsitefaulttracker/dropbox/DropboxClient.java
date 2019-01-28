@@ -53,7 +53,7 @@ public class DropboxClient {
 
     private boolean mConnected = false; // connected to dropbox
 
-    private static final long CHUNKED_UPLOAD_CHUNK_SIZE =  1 * (1024 * 1024);// 1L << 20; // 10MiB  = 10 * 2^20
+    private static final long CHUNKED_UPLOAD_CHUNK_SIZE =  100 * (1024 * 1024);// 1L << 20; // 10MiB  = 10 * 2^20
     private static final int CHUNKED_UPLOAD_MAX_ATTEMPTS = 5;
 
     // And later in some initialization function:
@@ -149,7 +149,7 @@ public class DropboxClient {
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            callback.onFolderExists();
+                            callback.onFailure("Folder exists");
                         }
                     });
                 }

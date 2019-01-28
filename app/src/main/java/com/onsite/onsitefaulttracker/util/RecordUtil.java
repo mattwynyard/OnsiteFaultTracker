@@ -482,7 +482,7 @@ public class RecordUtil {
     /**
      * Updates the record count variable by counting the number of records in storage
      */
-    private void updateRecordCount() {
+    public void updateRecordCount() {
         // Set the count to 0,  if the storage can not be accessed then the stored record count
         // will be left as 0
         mStoredRecordCount = 0;

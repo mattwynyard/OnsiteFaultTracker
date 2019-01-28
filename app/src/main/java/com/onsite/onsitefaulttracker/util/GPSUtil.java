@@ -5,6 +5,9 @@ import android.app.Application;
 import android.content.Context;
 import android.location.Criteria;
 import android.location.GnssStatus;
+import android.location.GpsSatellite;
+import android.location.OnNmeaMessageListener;
+import android.os.Build;
 import android.os.Bundle;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -25,6 +28,8 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.app.AlertDialog;
 import android.provider.Settings;
+import android.widget.Toast;
+
 import com.onsite.onsitefaulttracker.R;
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
 
@@ -37,7 +42,7 @@ public class GPSUtil implements LocationListener {
     // The application context
     private Context mContext;
 
-//    // The static instance of this class which will be initialized once then reused
+    //    // The static instance of this class which will be initialized once then reused
 //    // throughout the app
 //    private static GPSUtil sGPSUtil;
     // Shared Instance, to be initialized once and used throughout the application
@@ -48,16 +53,23 @@ public class GPSUtil implements LocationListener {
 
     private LocationManager mLocationManager;
     private Location mLocation;
+    //private LocationListener mLocationListener;
     private double latitude; // latitude
     private double longitude; // longitude
 
+    private OnNmeaMessageListener mNmeaListener;
+
     // The minimum distance to change Updates in meters
-    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 10 meters
+    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
 
     // The minimum time between updates in milliseconds
-    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 minute
+    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sex
 
     public static final int PERMISSIONS_REQUEST_LOCATION = 10;
+
+    private boolean mFix;
+    private int mSatellites;
+
 
     /**
      * initializes GPSUtil.
@@ -82,19 +94,67 @@ public class GPSUtil implements LocationListener {
         }
     }
 
+    public void addNmeaListener() {
+        mNmeaListener = new OnNmeaMessageListener() {
+            @Override
+            public void onNmeaMessage(String message, long timestamp) {
+                Log.v("NMEA String: ", "= " + message);
+            }
+        };
+    }
+
+    LocationListener mLocationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            //Log.v("Listener: ", "Location changed");
+            double latitude = location.getLatitude();
+            double longitude = location.getLongitude();
+            mLocation = location;
+            //String msg = "New Latitude: " + latitude + "New Longitude: " + longitude;
+            //Toast.makeText(getBaseContext(),msg,Toast.LENGTH_LONG).show();
+        }
+
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
+
     /**
-     * The constructor for RecordUtil, called internally
+     * The constructor for GPSUtil, called internally
      *
      * @param context
      */
-    private GPSUtil(final Context context) {
+    public GPSUtil(Context context) {
         mContext = context;
+        mLocationManager = (LocationManager)
+                mContext.getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            //return;
+        }
+        //mLocationManager.addNmeaListener(mNmeaListener);
         checkGPS();
     }
 
     public void checkGPS() {
-        mLocationManager = (LocationManager)
-                mContext.getSystemService(Context.LOCATION_SERVICE);
         // getting GPS status
         isGPSEnabled = mLocationManager
                 .isProviderEnabled(LocationManager.GPS_PROVIDER);
@@ -107,12 +167,65 @@ public class GPSUtil implements LocationListener {
         criteria.setAltitudeRequired(true);
         criteria.setSpeedRequired(false);
         //criteria.setCostAllowed(true);
-        criteria.setBearingRequired(true);
 
+        criteria.setBearingRequired(true);
+        GnssStatus.Callback gnssStatusCallBack = new GnssStatus.Callback() {
+            @Override
+            public void onSatelliteStatusChanged(GnssStatus status) {
+
+                int satelliteCount = status.getSatelliteCount();
+                Log.d(TAG, "Satellites: " + satelliteCount);
+                mSatellites = 0;
+                for (int i = 0; i < satelliteCount; i++) {
+                    if (status.usedInFix(i)) {
+                        mSatellites++;
+                    }
+                }
+                Log.d(TAG, "Satellites used in fix: " + mSatellites);
+            }
+
+            @Override
+            public void onFirstFix(int ttffMillis) {
+                super.onFirstFix(ttffMillis);
+                Log.d(TAG, "First fix: " + String.valueOf(ttffMillis));
+                mFix = true;
+                Toast.makeText(mContext, "Succesfull satellite fix!",
+                        Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onStarted() {
+                super.onStarted();
+                Log.d(TAG, "GPS_EVENT_STARTED...");
+
+            }
+
+            @Override
+            public void onStopped() {
+                super.onStopped();
+                Log.d(TAG, "GPS_EVENT_STOPPED...");
+
+            }
+        };
+        if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
         }
+        mLocationManager.registerGnssStatusCallback(gnssStatusCallBack);
+    }
+
+    public boolean getStatus() {
+        return mFix;
+    }
 
     public Location getLocation() {
-        Location location = null;
+        //Location location = null;
         if (isGPSEnabled) {
             if (ActivityCompat.checkSelfPermission(mContext,
                     Manifest.permission.ACCESS_FINE_LOCATION)
@@ -120,32 +233,27 @@ public class GPSUtil implements LocationListener {
                     ActivityCompat.checkSelfPermission(mContext,
                             Manifest.permission.ACCESS_COARSE_LOCATION) ==
                             PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 mLocationManager.requestLocationUpdates(
                         LocationManager.GPS_PROVIDER,
                         MIN_TIME_BW_UPDATES,
-                        MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+                        MIN_DISTANCE_CHANGE_FOR_UPDATES, mLocationListener);
 
                 Log.d(TAG, "GPS Enabled");
                 if (mLocationManager != null) {
-                    location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    Log.d(TAG, "GPS Provider enabled: " + mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                    mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-                    if (location != null) {
-                        latitude = location.getLatitude();
-                        longitude = location.getLongitude();
-                        Float accuracy = location.getAccuracy();
+                    if (mLocation != null) {
+                        latitude = mLocation.getLatitude();
+                        longitude = mLocation.getLongitude();
+                        Float accuracy = mLocation.getAccuracy();
                         Log.d("Latitude", Double.toString(latitude));
                         Log.d("Longitude", Double.toString(longitude));
-                        Log.d("Altitude", Double.toString(location.getAltitude()));
+                        Log.d("Altitude", Double.toString(mLocation.getAltitude()));
                         Log.d("Accuracy", Double.toString(accuracy));
                     } else {
                         Log.d(TAG, "Location Null");
+                        mLocation = new Location(LocationManager.GPS_PROVIDER);
                     }
                 } else {
                     Log.d(TAG, "Location Manager Null");
@@ -153,10 +261,11 @@ public class GPSUtil implements LocationListener {
 
             } else {
                 Log.d(TAG, "Permissions not granted");
-
             }
         }
-        return location;
+        //TODO fix to handle null location
+        //will be null if Location manager null or permission not granted
+        return mLocation;
     }
 
     private boolean checkPermssion() {
@@ -196,28 +305,5 @@ public class GPSUtil implements LocationListener {
     public void onStatusChanged(String provider, int status, Bundle extras) {
     }
 
-    // To implement on >SDK 24 at present min = 23
-//    public void onGpsStatusChanged(int event) {
-//
-//            int satellites = 0;
-//
-//            int satellitesInFix = 0;
-//        GnssStatus gnssStatus = new GnssStatus.Callback();
-//        if (ActivityCompat.checkSelfPermission(mContext,
-//                Manifest.permission.ACCESS_FINE_LOCATION)
-//                == PackageManager.PERMISSION_GRANTED &&
-//                ActivityCompat.checkSelfPermission(mContext,
-//                        Manifest.permission.ACCESS_COARSE_LOCATION) ==
-//                        PackageManager.PERMISSION_GRANTED) {
-//            int timetofix = mLocationManager.getGpsStatus(null).getTimeToFirstFix();
-//            Log.i(TAG, "Time to first fix = " + timetofix);
-//            for (GpsSatellite sat : mLocationManager.getGpsStatus(null).getSatellites()) {
-//                if (sat.usedInFix()) {
-//                    satellitesInFix++;
-//                }
-//                satellites++;
-//            }
-//            Log.i(TAG, satellites + " Used In Last Fix (" + satellitesInFix + ")");
-//        }
 
 }

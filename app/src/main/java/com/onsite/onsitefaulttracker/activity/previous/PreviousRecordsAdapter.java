@@ -188,9 +188,16 @@ public class PreviousRecordsAdapter extends BaseAdapter {
         String recordingTimeString = CalculationUtil.sharedInstance().getDisplayValueFromMilliseconds(item.totalRecordTime) + " recorded";
         holder.mRecordingTimeTextView.setText(recordingTimeString);
 
-        if (item.fileCompressedCount >= item.photoCount) {
+        if (item.fileCompressedCount >= item.photoCount && item.fileUploadCount == 0) {
             // Item Finished
-            holder.mProgressTextView.setText(mContext.getString(R.string.record_progress_finalized));
+            holder.mProgressTextView.setText(mContext.getString(R.string.record_progress_zipped));
+            holder.mProgressTextView.setTextColor(ContextCompat.getColor(mContext, R.color.finalized_red));
+            holder.mUploadButton.setVisibility(View.INVISIBLE);
+            holder.mRecordButton.setVisibility(View.INVISIBLE);
+            holder.mDeleteButton.setVisibility(View.VISIBLE);
+        } else if (item.fileUploadCount >= item.photoCount) {
+            // Item Finished
+            holder.mProgressTextView.setText(mContext.getString(R.string.record_progress_uploaded));
             holder.mProgressTextView.setTextColor(ContextCompat.getColor(mContext, R.color.finalized_red));
             holder.mUploadButton.setVisibility(View.INVISIBLE);
             holder.mRecordButton.setVisibility(View.INVISIBLE);

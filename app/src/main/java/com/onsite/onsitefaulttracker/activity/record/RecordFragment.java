@@ -1,6 +1,7 @@
 package com.onsite.onsitefaulttracker.activity.record;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -113,6 +114,8 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     // display an error and close the fragment
     private int mConsecutiveBlankFrames;
 
+    private Context mContext;
+
     /**
      * instantiate and return an instance of this fragment
      *
@@ -174,6 +177,14 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             updatePhotoCountText();
         }
         return view;
+    }
+
+    /**
+     * Action on attached
+     */
+    public void onAttach(Context context) {
+        mContext = context;
+        super.onAttach(context);
     }
 
     /**
@@ -269,12 +280,15 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     private void takeSnapshot() {
         // Verify if recording or not,  if not dont take a snap,
         // just returns
-        Location location = GPSUtil.sharedInstance().getLocation();
-        String lat = Double.toString(location.getLatitude());
-        String lon = Double.toString(location.getLongitude());
-        String acc = Double.toString(location.getAccuracy());
+        //Returns a null location if no known last location - eventually returns true location once
+        // satellites acquired
+//        GPSUtil gps = new GPSUtil(mContext);
+//        Location location = gps.getLocation();
+//        String lat = Double.toString(location.getLatitude());
+//        String lon = Double.toString(location.getLongitude());
+//        String acc = Double.toString(location.getAccuracy());
 
-        writeGPSFile(lat, lon, acc);
+        //writeGPSFile(lat, lon, acc);
         if (!mRecording) {
             return;
         }
@@ -289,7 +303,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                             ((float)snapBitmap.getHeight()/(float)snapBitmap.getWidth()) :
                             ((float)snapBitmap.getWidth()/(float)snapBitmap.getHeight());
             BitmapSaveUtil.SaveBitmapResult saveResult = BitmapSaveUtil.sharedInstance()
-                    .saveBitmap(snapBitmap, mRecord, ratio, isLandscape, location);
+                    .saveBitmap(snapBitmap, mRecord, ratio, isLandscape, GPSUtil.sharedInstance().getLocation());
             long currentTime = new Date().getTime();
 
             // Check the result of saving the bitmap for low dis space or error

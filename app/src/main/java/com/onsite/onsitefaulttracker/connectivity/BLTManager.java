@@ -16,6 +16,7 @@ import android.content.Intent;
 
 import android.content.IntentFilter;
 import android.app.Activity;
+import android.os.HardwarePropertiesManager;
 import android.util.Log;
 //Notifications
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
@@ -31,6 +32,9 @@ import java.io.PrintWriter;
 import java.io.IOException;
 
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
+
+import static android.os.HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU;
+import static android.os.HardwarePropertiesManager.TEMPERATURE_CURRENT;
 
 /**
         * Bluetooth Classic Device manager,
@@ -68,6 +72,7 @@ public class BLTManager extends Activity {
     private PrintWriter mWriterOut;
 
     private boolean mRecording;
+    private HardwarePropertiesManager mHPManager;
 
     /**
      * initialize the BLTManager class,  to be called once from the application class

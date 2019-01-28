@@ -21,10 +21,10 @@ public abstract class UploadCallback {
          * @param errorMessage
          */
         public abstract void onFailure(String errorMessage);
-    /**
-     * Override this when folder exists
-     *
-     */
-        public abstract void onFolderExists();
+//    /**
+//     * Override this when folder exists
+//     *
+//     */
+//        public abstract void onFolderExists();
 
 }

@@ -83,7 +83,8 @@
     <!-- Previous Records Strings -->
     <string name="record_progress_in_progress">IN PROGRESS</string>
     <string name="record_progress_ready_to_submit">READY TO SUBMIT</string>
-    <string name="record_progress_finalized">FINALIZED</string>
+    <string name="record_progress_zipped">ZIPPED</string>
+    <string name="record_progress_uploaded">UPLOADED</string>
 
     <string name="delete_previous_record_title">Are you sure?</string>
     <string name="delete_previous_record_not_finalized_message">Deleting a record cannot be undone and this record has not yet been finalized.  All work will be lost, are your sure you want to delete?</string>
