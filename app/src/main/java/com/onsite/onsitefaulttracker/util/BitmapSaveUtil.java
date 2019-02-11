@@ -170,7 +170,7 @@ public class BitmapSaveUtil {
                     //send photo name to client
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
                     if (BLTManager.sharedInstance().getState() == 3) {
-                        BLTManager.sharedInstance().sendMessage(filename + ".jpg");
+                        BLTManager.sharedInstance().sendMessage("C:" + filename + ".jpg");
                     }
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();

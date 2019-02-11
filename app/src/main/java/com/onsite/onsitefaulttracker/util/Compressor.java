@@ -25,7 +25,7 @@ public class Compressor {
      * Interface for communicating with the parent fragment/activity
      */
     public interface CompressorListener {
-        void dataRead(int _bytes, int caller);
+        void dataRead(long _bytes, int caller);
     }
 
     /**
@@ -92,13 +92,13 @@ public class Compressor {
             BufferedInputStream origin = null;
             FileOutputStream dest = new FileOutputStream(_zipFile + ".zip");
             ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-            byte data[] = new byte[BUFFER];
+            byte data[] = new byte[BUFFER]; //default 2048
 
             for(int i = 0; i < _files.length; i++) {
-                //Log.v("Compress", "Adding: " + _files[i]);
                 _size = _files[i].length();
                 totalBytes += _size;
                 FileInputStream fi = new FileInputStream(_files[i]);
+                mCompressorListener.dataRead(_files[i].length(), caller);
                 origin = new BufferedInputStream(fi, BUFFER);
                 ZipEntry entry = new ZipEntry(_files[i].getAbsolutePath()
                         .substring(_files[i].getAbsolutePath().lastIndexOf("/") + 1));
@@ -107,7 +107,7 @@ public class Compressor {
                 int count;
                 while ((count = origin.read(data, 0, BUFFER)) != -1) {
                     out.write(data, 0, count);
-                    mCompressorListener.dataRead(data.length, caller);
+                    //mCompressorListener.dataRead(data.length, caller);
                 }
                 origin.close();
 

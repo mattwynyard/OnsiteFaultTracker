@@ -1,6 +1,7 @@
 package com.onsite.onsitefaulttracker.activity.record;
 
 import android.app.AlertDialog;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 
 import com.onsite.onsitefaulttracker.R;
 import com.onsite.onsitefaulttracker.activity.BaseFragment;
+import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
 import com.onsite.onsitefaulttracker.connectivity.TcpConnection;
 import com.onsite.onsitefaulttracker.model.Record;
@@ -46,6 +48,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by hihi on 6/12/2016.
@@ -188,6 +191,28 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     }
 
     /**
+     * Called when the fragment is paused,
+     * closes the camera and stops the background thread that it is running on
+     */
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        Log.i(TAG, "RECORD:DETACHED");
+        BLTManager.sharedInstance().sendMessage("RECORD:DETACHED");
+
+    }
+
+//    /**
+//     * Called when the fragment is paused,
+//     * closes the camera and stops the background thread that it is running on
+//     */
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i(TAG, "RECORD:STOPPED");
+    }
+
+    /**
      *  Called when fragment resumes,  starts the background thread which takes photos every
      *  specified interval.
      */
@@ -206,8 +231,11 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         }
         // Register to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().register(this);
-        BLTManager.sharedInstance().sendMessage("C: RESUMED");
+        BLTManager.sharedInstance().sendMessage("RECORD:RESUMED");
         //TcpConnection.getSharedInstance().sendMessage("C: RESUMED");
+
+
+
     }
     /**
      * Called when the fragment is paused,
@@ -221,15 +249,18 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             long recordedTime = new Date().getTime() - mStartedRecordingTime;
             mRecord.totalRecordTime += recordedTime;
         }
+        Log.i(TAG, "RECORD:PAUSED");
         CameraUtil.sharedInstance().closeCamera();
         RecordUtil.sharedInstance().saveCurrentRecord();
-        stopRecording();
-
+        mRecording = false;
+        //TcpConnection.getSharedInstance().setRecording(false);
+        BLTManager.sharedInstance().setRecording(false);
         // Unregister to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
+        BLTManager.sharedInstance().sendMessage("RECORD:PAUSED");
         //TcpConnection.getSharedInstance().sendMessage("C: PAUSED");
+        getActivity().finish(); //kills paused frame - new frame created when records resumes
     }
-
     /**
      * diaplays the number of photos taken
      */
@@ -244,6 +275,12 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
        mExposureSeekBar.setProgress(SettingsUtil.sharedInstance().getCurrentExposureAsPercentage());
     }
 
+    /**
+     *
+     * @param latitude - latitude of the photo in decimal degrees
+     * @param longitude - longitude of the photo in decimal degrees
+     * @param accuracy - estimated accuracy in metres of the geolocation
+     */
     private void writeGPSFile(final String latitude, final String longitude, final String accuracy) {
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
@@ -278,17 +315,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      * Take a snapshot and save it to the drive
      */
     private void takeSnapshot() {
-        // Verify if recording or not,  if not dont take a snap,
-        // just returns
-        //Returns a null location if no known last location - eventually returns true location once
-        // satellites acquired
-//        GPSUtil gps = new GPSUtil(mContext);
-//        Location location = gps.getLocation();
-//        String lat = Double.toString(location.getLatitude());
-//        String lon = Double.toString(location.getLongitude());
-//        String acc = Double.toString(location.getAccuracy());
 
-        //writeGPSFile(lat, lon, acc);
         if (!mRecording) {
             return;
         }
@@ -322,7 +349,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 }
                 mRecord.photoCount++;
                 updatePhotoCountText();
-                BLTManager.sharedInstance().sendMessage("M: OK");
+                BLTManager.sharedInstance().sendMessage("M:OK");
             } else {
                 // There is not enough disk space to save any more photos,
                 // display an error and then close the fragment
@@ -343,7 +370,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //                }
                 if (BLTManager.sharedInstance().getState() == 3) { //STATE_CONNECTED
                     int batteryLevel = Math.round(currentBatteryLevel);
-                    String msg = "B: " + Integer.toString(batteryLevel) + "%";
+                    String msg = "B:" + Integer.toString(batteryLevel) + "%";
                     BLTManager.sharedInstance().sendMessage(msg);
 //                    if (!TcpConnection.getSharedInstance().isConnected()) {
 //                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
@@ -418,7 +445,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("M: OUT OF DISK SPACE");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("M: OUT OF DISK SPACE");
+            BLTManager.sharedInstance().sendMessage("M:OUT OF DISK SPACE");
         }
 
         new AlertDialog.Builder(getActivity())
@@ -469,7 +496,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("M: LOW DISK SPACE");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("M: LOW DISK SPACE");
+            BLTManager.sharedInstance().sendMessage("M:LOW DISK SPACE");
         }
 
         new AlertDialog.Builder(getActivity())
@@ -484,7 +511,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         Log.e(TAG, "* LOW DISK SPACE                                      *");
         Log.e(TAG, "*******************************************************");
     }
-
     /**
      * Display the low battery warning to the user
      */
@@ -493,7 +519,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("LOW_BATTERY");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("B: LOW_BATTERY");
+            BLTManager.sharedInstance().sendMessage("B:LOW_BATTERY");
         }
 
         new AlertDialog.Builder(getActivity())
@@ -509,7 +535,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         Log.e(TAG, "*******************************************************");
 
     }
-
     /**
      * schedules the next frame to be snapped after the set time interval
      */
@@ -519,7 +544,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         if (!mRecording) {
             return;
         }
-
         // Schedule next frame to be snapped after specified time interval
         ThreadUtil.executeOnMainThreadDelayed(new Runnable() {
             @Override
@@ -529,7 +553,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             }
         }, mIntervalMillis);
     }
-
     /**
      * Start recording snap shots
      */
@@ -541,6 +564,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             //TcpConnection.getSharedInstance().setRecording(true);
             BLTManager.sharedInstance().setRecording(true);
             scheduleNextFrame();
+            //getActivity().getFragmentManager().popBackStack();
         } else {
             Log.i(TAG, "Start recording called but already recording");
         }
@@ -554,6 +578,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             mRecording = false;
             //TcpConnection.getSharedInstance().setRecording(false);
             BLTManager.sharedInstance().setRecording(false);
+
         } else {
             Log.i(TAG, "Stop recording called but already recording");
         }
@@ -590,7 +615,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
             CameraUtil.sharedInstance().configureTransform(width, height);
-
             startRecording();
         }
 
@@ -648,7 +672,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      * @param event
      */
     @Subscribe
-    public void onBLEStartRecordingEvent(BLTStartRecordingEvent event) {
+    public void onBLTStartRecordingEvent(BLTStartRecordingEvent event) {
         //HomeFragment.createInstance().onContinueButtonClicked();
         startRecording();
     }
@@ -660,8 +684,10 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     @Subscribe
     public void onBLTStopRecordingEvent(BLTStopRecordingEvent event) {
         Log.i(TAG, "Stop recording called from BLTEvent");
-        getActivity().onBackPressed();
         stopRecording();
+        getActivity().onBackPressed();
+
+
     }
     /**
      * Event from when user elects to pause recording
@@ -706,8 +732,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     public void onTCPSopRecordingEvent(TCPStopRecordingEvent event) {
         Log.i(TAG, "Stop recording called from TCPEvent");
         //getFragmentManager().popBackStack();
-        getActivity().onBackPressed();
         stopRecording();
+        getActivity().onBackPressed();
+
     }
 
 }

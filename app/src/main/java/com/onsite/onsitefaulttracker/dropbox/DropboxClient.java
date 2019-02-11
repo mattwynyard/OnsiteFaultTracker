@@ -1,10 +1,10 @@
 package com.onsite.onsitefaulttracker.dropbox;
 
 import android.app.Activity;
+
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.dropbox.client2.ProgressListener;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.client2.DropboxAPI;
@@ -14,7 +14,6 @@ import com.dropbox.core.v2.files.CommitInfo;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadSessionCursor;
 import com.dropbox.core.v2.files.UploadSessionFinishArg;
-import com.dropbox.core.v2.files.UploadSessionFinishBatchJobStatus;
 import com.dropbox.core.v2.files.UploadSessionFinishBatchLaunch;
 import com.dropbox.core.v2.files.WriteMode;
 import com.dropbox.core.v2.users.FullAccount;
@@ -65,7 +64,7 @@ public class DropboxClient {
      */
     public interface DropboxClientListener {
         void onDropboxAuthenticated(FullAccount result, DbxClientV2 client);
-        void onDropboxFailed();
+        void onDropboxFailed(Exception e);
         void uploadProgress(long buffer);
     }
 
@@ -102,8 +101,6 @@ public class DropboxClient {
      */
     public void authenticateDropBoxUser() throws DbxException {
 
-        //Auth.startOAuth2Authentication(mParentActivity, OnSiteConstants.DROPBOX_APP_KEY);
-        //String accessToken = Auth.getOAuth2Token();
         String accessToken = "Ctnea--u6xAAAAAAAAAAHSNKi9T3phbEOvs6p-A0JH6aT_eKPAQRGCeeK1BhrHk7";
         if (accessToken != null) {
             new DropBoxCallback(this, accessToken, new DropBoxCallback.Callback() {
@@ -111,26 +108,15 @@ public class DropboxClient {
                 public void onLoginComplete(FullAccount result, DbxClientV2 client) {
                     mDbxClient = client;
                     mConnected = true;
-                    Log.e(TAG, "Success.", null);
                     mDropboxClientListener.onDropboxAuthenticated(result, client);
                 }
                 @Override
                 public void onError(Exception e) {
-
-                    Log.e(TAG, "Failed to login.", e);
+                    mDropboxClientListener.onDropboxFailed(e);
                 }
             }).execute();
         }
     }
-
-//    ProgressListener progressListener = new ProgressListener() {
-//        long uploadedBytes = 0;
-//        @Override
-//        public void onProgress(long l) {
-//            printProgress(l + uploadedBytes, size);
-//            if (l == CHUNKED_UPLOAD_CHUNK_SIZE) uploadedBytes += CHUNKED_UPLOAD_CHUNK_SIZE;
-//        }
-//    };
 
     public void confirmOrCreateFolder(final DbxClientV2 client, final Record record, final UploadCallback callback) {
         ThreadUtil.executeOnNewThread(new Runnable() {
@@ -149,15 +135,15 @@ public class DropboxClient {
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            callback.onFailure("Folder exists");
+                            callback.onFailure("Files have " +
+                                    "already uploaded. Click OK to re-upload photos or CANCEL to " +
+                                    "abort upload");
                         }
                     });
                 }
             }
         });
     }
-
-
 
     private void printProgress(long uploaded, long size) {
         System.out.printf("Uploaded %12d / %12d bytes (%5.2f%%)\n", uploaded, size, 100 * (uploaded / (double) size));
@@ -190,8 +176,6 @@ public class DropboxClient {
                                 .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE).getSessionId();
                         offset += CHUNKED_UPLOAD_CHUNK_SIZE;
                         mDropboxClientListener.uploadProgress(offset);
-
-
                     }
                     cursor = new UploadSessionCursor(sessionId, offset);
 
@@ -244,8 +228,90 @@ public class DropboxClient {
             }
         });
     }
+    /**
+     * Upload the next file for the record to dropbox
+     *
+     * @param record
+     */
+    public void uploadNextFile(final Record record, final File _file, final UploadCallback Callback) {
+        //final int nextFileIndex = record.fileUploadCount;
+        //final File nextFileToUpload = nextFileIndex < recordFiles.length ? recordFiles[nextFileIndex] : null;
+        final File nextFileToUpload = _file;
+        if (nextFileToUpload == null) {
+            // TODO: react accordingly
+            ThreadUtil.executeOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    Callback.onFailure("No files to upload");
+                }
+            });
+            return;
+        }
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    FileInputStream finStream = new FileInputStream(nextFileToUpload);
+                    Log.i(TAG, "Bytes to upload: " +
+                            String.valueOf(nextFileToUpload.length()/1024));
+                    FileMetadata response = mDbxClient.files().uploadBuilder("/" +
+                            record.recordFolderName + "/" + nextFileToUpload.getName())
+                            .withMode(WriteMode.OVERWRITE)
+                            .uploadAndFinish(finStream);
 
-    public void uploadBatchFile(final Record record, final ArrayList<String> recordFiles, final UploadCallback Callback) {
+                    if (response != null && !TextUtils.isEmpty(response.getRev())) {
+                        Log.i(TAG, "File Uploaded");
+                        mDropboxClientListener.uploadProgress(nextFileToUpload.length());
+                        //record.fileUploadCount++;
+                        //record.uploadedSizeKB += (nextFileToUpload.length()/1024);
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onSuccess(null);
+                            }
+                        });
+                    }
+                } catch (IOException ioEx) {
+                    Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onFailure("Failed to open file stream");
+                        }
+                    });
+                } catch (DbxException dpEx) {
+                    // If file already exists exception
+                    if (dpEx.toString().contains("Conflict")) {
+                        // File already exists in dropbox,  update record then goto the next
+                        Log.i(TAG, "File already exists");
+                        //record.fileUploadCount++;
+                        //record.uploadedSizeKB += (nextFileToUpload.length()/1024);
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onSuccess(null);
+                            }
+                        });
+                        return;
+                    }
+
+                    // Some other error uploading file
+                    Log.e(TAG, "Dropbox exception trying to upload file: " + dpEx.getLocalizedMessage());
+                    ThreadUtil.executeOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Callback.onFailure("Failed to upload file");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+
+    /********* DEPRECIATED - uploads files individually but too slow ***********/
+    public void uploadBatchFile(final Record record, final ArrayList<String> recordFiles,
+                                final UploadCallback Callback) {
 
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
@@ -298,7 +364,7 @@ public class DropboxClient {
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                           Callback.onSuccess(null);
+                            Callback.onSuccess(null);
                         }
                     });
                 } catch (DbxException e) {
@@ -307,120 +373,6 @@ public class DropboxClient {
                         @Override
                         public void run() {
                             Callback.onFailure("Failed to upload batch files");
-                        }
-                    });
-                }
-//                try {
-//                while (mDbxClient.files().uploadSessionFinishBatchCheck(result.getAsyncJobIdValue()).isInProgress()) {
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        // TODO Auto-generated catch block
-//                        e.printStackTrace();
-//                        ThreadUtil.executeOnMainThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                Callback.onFailure("Thread error");
-//                            }
-//                        });
-//                    }
-//                }
-
-//                UploadSessionFinishBatchJobStatus status = null;
-//                status = mDbxClient.files().uploadSessionFinishBatchCheck(result.getAsyncJobIdValue());
-//                    System.out.println(status.toString());
-//                    ThreadUtil.executeOnMainThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            Callback.onSuccess(null);
-//                        }
-//                    });
-//                } catch (DbxException e) {
-//                    e.printStackTrace();
-//                    ThreadUtil.executeOnMainThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            Callback.onFailure("Failed to finalise batch job");
-//                        }
-//                    });
-//                }
-
-            }
-        });
-    }
-
-    /**
-     * Upload the next file for the record to dropbox
-     *
-     * @param record
-     */
-    public void uploadNextFile(final Record record, final File _file, final UploadCallback Callback) {
-        //final int nextFileIndex = record.fileUploadCount;
-        //final File nextFileToUpload = nextFileIndex < recordFiles.length ? recordFiles[nextFileIndex] : null;
-        final File nextFileToUpload = _file;
-        if (nextFileToUpload == null) {
-            // TODO: react accordingly
-            ThreadUtil.executeOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    Callback.onFailure("No files to upload");
-                }
-            });
-            return;
-        }
-        ThreadUtil.executeOnNewThread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    FileInputStream finStream = new FileInputStream(nextFileToUpload);
-                    Log.i(TAG, "Bytes to upload: " +
-                            String.valueOf(nextFileToUpload.length()/1024));
-                    FileMetadata response = mDbxClient.files().uploadBuilder("/" +
-                            record.recordFolderName + "/" + nextFileToUpload.getName())
-                            .withMode(WriteMode.OVERWRITE)
-                            .uploadAndFinish(finStream);
-
-                    if (response != null && !TextUtils.isEmpty(response.getRev())) {
-                        Log.i(TAG, "File Uploaded");
-                        record.fileUploadCount++;
-                        record.uploadedSizeKB += (nextFileToUpload.length()/1024);
-                        ThreadUtil.executeOnMainThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Callback.onSuccess(null);
-                            }
-                        });
-                    }
-                } catch (IOException ioEx) {
-                    Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
-                    ThreadUtil.executeOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Callback.onFailure("Failed to open file stream");
-                        }
-                    });
-                } catch (DbxException dpEx) {
-                    // If file already exists exception
-                    if (dpEx.toString().contains("Conflict")) {
-                        // File already exists in dropbox,  update record then goto the next
-                        Log.i(TAG, "File already exists");
-                        record.fileUploadCount++;
-                        record.uploadedSizeKB += (nextFileToUpload.length()/1024);
-                        ThreadUtil.executeOnMainThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Callback.onSuccess(null);
-                            }
-                        });
-                        return;
-                    }
-
-                    // Some other error uploading file
-                    Log.e(TAG, "Dropbox exception trying to upload file: " + dpEx.getLocalizedMessage());
-                    ThreadUtil.executeOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Callback.onFailure("Failed to upload file");
                         }
                     });
                 }

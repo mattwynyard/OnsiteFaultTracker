@@ -111,7 +111,6 @@ public class BLTManager extends Activity {
      * Intialise the bluetooth adapter and set name and connection state
      */
     public void setupBluetooth() {
-
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mBluetoothAdapter.setName(BLUETOOTH_ADAPTER_NAME);
         mState = STATE_NONE;
@@ -183,7 +182,7 @@ public class BLTManager extends Activity {
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
-                if ( mWriterOut != null) {
+                if (mWriterOut != null) {
                     mWriterOut.println(message);
                     mWriterOut.flush();
                 }
@@ -320,7 +319,7 @@ public class BLTManager extends Activity {
                     BusNotificationUtil.sharedInstance().postNotification(new BLTConnectedNotification());
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
-                        mWriterOut.println("CONNECTED\n");
+                        mWriterOut.println("CONNECTED");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -339,7 +338,7 @@ public class BLTManager extends Activity {
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
             } catch (InterruptedException e) {
-                Log.e(TAG, "Thread did not die", e);
+                Log.e(TAG, "Thread interupt", e);
                 e.printStackTrace();
             }
         }

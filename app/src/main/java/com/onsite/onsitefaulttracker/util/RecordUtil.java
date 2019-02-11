@@ -160,10 +160,16 @@ public class RecordUtil {
         newRecord.recordName = recordName;
         newRecord.creationDate = new Date();
         newRecord.recordId = UUID.randomUUID().toString();
+        newRecord.fileCompressedCount = 0;
+        newRecord.fileUploadCount = 0;
         newRecord.photoCount = 0;
         newRecord.recordSizeKB = 0;
+        newRecord.totalRecordTime = 0;
+        newRecord.totalSizeKB = 0;
+        newRecord.totalUploadSizeKB = 0;
+        newRecord.uploadTime = 0;
         newRecord.uploadedSizeKB = 0;
-        newRecord.fileUploadCount = 0;
+
 
         ArrayList<Record> todaysRecords = getRecordsForDate(newRecord.creationDate);
         String appendString = todaysRecords != null && todaysRecords.size() > 0 ? "_" + (todaysRecords.size() + 1) : "";
@@ -475,7 +481,18 @@ public class RecordUtil {
      * @return
      */
     public String getPathForRecord(final Record record) {
-        String baseFolder = getBaseFolder().getAbsolutePath();
+        File[] files = new File("./storage/0000-0000").listFiles();
+        for (File aFile : files) {
+            if (aFile.isDirectory()) {
+                System.out.println(aFile.getAbsolutePath());
+            }
+        }
+
+
+
+
+       String baseFolder = getBaseFolder().getAbsolutePath();
+        //String baseFolder = "/./storage/0000-0000/_OnSite";
         return baseFolder + "/" + record.recordFolderName;
     }
 
@@ -517,6 +534,7 @@ public class RecordUtil {
                 return null;
             }
         }
+        //File rootFolder = new File("./storage/0000-0000/_OnSite");
         return rootFolder;
     }
 

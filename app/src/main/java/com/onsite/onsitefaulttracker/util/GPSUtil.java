@@ -63,7 +63,7 @@ public class GPSUtil implements LocationListener {
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 1; // 1 meters
 
     // The minimum time between updates in milliseconds
-    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sex
+    private static final long MIN_TIME_BW_UPDATES = 1000; // 1 sec
 
     public static final int PERMISSIONS_REQUEST_LOCATION = 10;
 
@@ -181,7 +181,7 @@ public class GPSUtil implements LocationListener {
                         mSatellites++;
                     }
                 }
-                Log.d(TAG, "Satellites used in fix: " + mSatellites);
+                //Log.d(TAG, "Satellites used in fix: " + mSatellites);
             }
 
             @Override
@@ -197,6 +197,8 @@ public class GPSUtil implements LocationListener {
             public void onStarted() {
                 super.onStarted();
                 Log.d(TAG, "GPS_EVENT_STARTED...");
+                Toast.makeText(mContext, "Acquiring satellite fix...",
+                        Toast.LENGTH_LONG).show();
 
             }
 
@@ -247,10 +249,10 @@ public class GPSUtil implements LocationListener {
                         latitude = mLocation.getLatitude();
                         longitude = mLocation.getLongitude();
                         Float accuracy = mLocation.getAccuracy();
-                        Log.d("Latitude", Double.toString(latitude));
-                        Log.d("Longitude", Double.toString(longitude));
-                        Log.d("Altitude", Double.toString(mLocation.getAltitude()));
-                        Log.d("Accuracy", Double.toString(accuracy));
+//                        Log.d("Latitude", Double.toString(latitude));
+//                        Log.d("Longitude", Double.toString(longitude));
+//                        Log.d("Altitude", Double.toString(mLocation.getAltitude()));
+//                        Log.d("Accuracy", Double.toString(accuracy));
                     } else {
                         Log.d(TAG, "Location Null");
                         mLocation = new Location(LocationManager.GPS_PROVIDER);

@@ -64,7 +64,9 @@
                   android:screenOrientation="portrait"/>
 
         <activity android:name=".activity.record.RecordActivity"
-                  android:theme="@style/AppTheme.NoActionBar" />
+                android:theme="@style/AppTheme.NoActionBar"
+                android:screenOrientation="landscape"/>
+
 
         <activity android:name=".activity.submit.SubmitActivity"
                   android:theme="@style/AppTheme.NoActionBar"
