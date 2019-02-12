@@ -375,13 +375,14 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //                    if (!TcpConnection.getSharedInstance().isConnected()) {
 //                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
 //                    }
-                }
-                if (currentBatteryLevel <= LOW_BATTERY_ALARM_LEVEL) {
-                    if (!mDisplayedLowBatteryError) {
-                        displayLowBatteryError();
-                        mDisplayedLowBatteryError = true;
+                } else {
+                    if (currentBatteryLevel <= LOW_BATTERY_ALARM_LEVEL) {
+                        if (!mDisplayedLowBatteryError) {
+                            displayLowBatteryError();
+                            mDisplayedLowBatteryError = true;
+                        }
+                        playWarningSound();
                     }
-                    playWarningSound();
                 }
             }
 
@@ -520,19 +521,20 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("B:LOW_BATTERY");
+        } else {
+
+            new AlertDialog.Builder(getActivity())
+                    .setTitle(getString(R.string.record_low_battery_dialog_title))
+                    .setMessage(getString(R.string.record_low_battery_dialog_message))
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .show();
+
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* WARNING                                             *");
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* LOW BATTERY                                         *");
+            Log.e(TAG, "*******************************************************");
         }
-
-        new AlertDialog.Builder(getActivity())
-                .setTitle(getString(R.string.record_low_battery_dialog_title))
-                .setMessage(getString(R.string.record_low_battery_dialog_message))
-                .setPositiveButton(getString(android.R.string.ok), null)
-                .show();
-
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* WARNING                                             *");
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* LOW BATTERY                                         *");
-        Log.e(TAG, "*******************************************************");
 
     }
     /**

@@ -280,8 +280,8 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
             mDisplayImageIndex = 0;
             return;
         }
-        final Bitmap uploadingBitmap = mRecordFiles[mDisplayImageIndex].getName().contains(".jpg") ?
-                BitmapFactory.decodeFile(mRecordFiles[mDisplayImageIndex].getAbsolutePath()) : null;
+        final Bitmap uploadingBitmap = mOriginalFiles[mDisplayImageIndex].getName().contains(".jpg") ?
+                BitmapFactory.decodeFile(mOriginalFiles[mDisplayImageIndex].getAbsolutePath()) : null;
         mCurrentImageView.setImageBitmap(uploadingBitmap);
     }
 
@@ -400,9 +400,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         }
         //handles null pointer if user navigates away from submit page. Will re-split large photo
         //array. Filenames could potentially be stored in shared preferences to be more efficient
-//        if (mResizeFiles == null) {
-//            splitRecordFiles();
-//        }
         outPath = RecordUtil.sharedInstance().getBaseFolder().getAbsolutePath()
                 + "/onsite_record_" + mRecord.recordFolderName + "_R.zip";
 
@@ -423,7 +420,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
             }
             @Override
             public void onFailure(String errorMessage) {
-
                 // If the fragment is not active just return
                 if (!mResumed) {
                     return;
@@ -524,6 +520,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
     private void onSubmissionComplete() {
 
         mSubmitting = false;
+        mCurrentImageView.setVisibility(View.INVISIBLE);
         mPercentageTextView.setVisibility(View.INVISIBLE);
         mRecordSubmittedTextView.setVisibility(View.VISIBLE);
         mSubmittingProgressBar.setVisibility(View.INVISIBLE);
@@ -541,7 +538,6 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
      *
      */
     private void onSubmitClicked() {
-
 
         if (mSubmitButton.getText() == "UPLOAD") {
             Log.i(TAG, "Upload clicked");
@@ -567,12 +563,10 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
                     Log.i(TAG, "START ZIP");
                     cOriginal.zip(0);
                     cResize.zip(1);
-                    //TODO TEMP Hack need to add .rec file
                     Log.i(TAG, "END ZIP");
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-
                             onSubmissionComplete();
                         }
                     });

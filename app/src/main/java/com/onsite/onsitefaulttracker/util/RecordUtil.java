@@ -481,12 +481,12 @@ public class RecordUtil {
      * @return
      */
     public String getPathForRecord(final Record record) {
-        File[] files = new File("./storage/0000-0000").listFiles();
-        for (File aFile : files) {
-            if (aFile.isDirectory()) {
-                System.out.println(aFile.getAbsolutePath());
-            }
-        }
+//        File[] files = new File("./storage/0000-0000").listFiles();
+//        for (File aFile : files) {
+//            if (aFile.isDirectory()) {
+//                System.out.println(aFile.getAbsolutePath());
+//            }
+//        }
 
 
 

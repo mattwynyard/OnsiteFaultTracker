@@ -124,6 +124,9 @@ public class HomeFragment extends BaseFragment {
 
     private boolean bluetooth = false;
 
+    private String mCamera;
+    private String mSerialNumber;
+
     // the request code for the camera permissions
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1;
 
@@ -140,8 +143,20 @@ public class HomeFragment extends BaseFragment {
 
     private final int BT_TIMEOUT = 1200; //seconds
 
+    private enum SerialNumber {
+        ad07160328c52f53ed,
+        ce0416048828440503
+    }
 
+    int PERMISSION_ALL = 9;
 
+    String[] PERMISSIONS = {
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.CAMERA,
+            android.Manifest.permission.READ_PHONE_STATE
+    };
     /**
      * On create view, Override this in each extending fragment to implement initialization for that
      * fragment.
@@ -199,15 +214,23 @@ public class HomeFragment extends BaseFragment {
             mAppVersion = view.findViewById(R.id.app_version_text_view);
             initAppVersionText();
             enableBluetooth();
-            requestLocationPermission();
-            requestCameraPermission();
-            requestStoragePermission();
-            requestPhonePermissions();
+            if(!hasPermissions(mContext, PERMISSIONS)){
+                ActivityCompat.requestPermissions(getActivity(), PERMISSIONS, PERMISSION_ALL);
+            }
             updateButtonStates();
-            //runTcpConnection();
-
         }
         return view;
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions) {
+        if (context != null && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     /**
      * Action when the fragment gets attached to the parent activity, sets the listener
@@ -229,7 +252,6 @@ public class HomeFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "HOME: CREATE");
-
     }
 
     /**
@@ -275,6 +297,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        startGPS();
         Log.i(TAG, "HOME: RESUMED");
         Log.i(TAG, "State = " + BLTManager.sharedInstance().getState());
         Log.i(TAG, "BT Enabled = " + BLTManager.sharedInstance().isBluetoothEnabled());
@@ -320,21 +343,13 @@ public class HomeFragment extends BaseFragment {
     }
 
     private void startGPS() {
-        GPSUtil gps = new GPSUtil(mContext);
-        Location location = gps.getLocation();
-    }
-
-    /**
-     * Requests access to location information for SDK > 23
-     * Location information needed for bluetooth advertisements
-     */
-    private void requestLocationPermission() {
         if ((getActivity().checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED)
                 && (getActivity().checkSelfPermission
                 (Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED)){
-            startGPS();
+                == PackageManager.PERMISSION_GRANTED)) {
+            GPSUtil gps = new GPSUtil(mContext);
+            Location location = gps.getLocation();
         } else {
             ActivityCompat.requestPermissions(getActivity(),
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
@@ -344,40 +359,29 @@ public class HomeFragment extends BaseFragment {
         }
     }
 
-    /**
-     * Requests camera permissions if they are not already granted
-     */
-    private boolean requestCameraPermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (getActivity().checkSelfPermission(Manifest.permission.CAMERA)
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.CAMERA},
-                        CAMERA_PERMISSION_REQUEST_CODE);
-                return false;
-            }
+    private void getSerial() {
+        if (getActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE)
+                == PackageManager.PERMISSION_GRANTED) {
+            mSerialNumber = Build.getSerial();
+            Log.i(TAG, "DEVICE: " + mSerialNumber);
+        } else {
+            ActivityCompat.requestPermissions(getActivity(),
+                    new String[]{Manifest.permission.READ_PHONE_STATE},
+                    READ_PHONE_STATE_REQUEST_CODE);
         }
-        return true;
     }
 
     private boolean requestPhonePermissions() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (getActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.READ_PHONE_STATE},
-                        READ_PHONE_STATE_REQUEST_CODE);
-                //if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
+                if (getActivity().shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
 
+                } else {
+                    ActivityCompat.requestPermissions(getActivity(),
+                            new String[]{Manifest.permission.READ_PHONE_STATE},
+                            READ_PHONE_STATE_REQUEST_CODE);
+                }
                 return true;
             } else {
                 String device = Build.getSerial();
@@ -420,18 +424,11 @@ public class HomeFragment extends BaseFragment {
                 } else {
                     Log.i(TAG, "Need location permission");
                 }
-                break;
-
-            case STORAGE_PERMISSION_REQUEST_CODE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    return;
-                } else {
-                    Log.i(TAG, "Need location permission");
-                }
                 return;
             case READ_PHONE_STATE_REQUEST_CODE:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.i(TAG, "Phone Permssion granted");
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // All good!
+                    getSerial();
                     return;
                 } else {
                     Log.i(TAG, "Need location permission");
@@ -468,7 +465,6 @@ public class HomeFragment extends BaseFragment {
             Log.i(TAG, "Bluetooth Enabled");
             Log.i(TAG, "Starting BT advertisement");
             startAdvertising();
-            //BLTManager.sharedInstance().startDiscovery();
         }
     }
 
@@ -582,6 +578,7 @@ public class HomeFragment extends BaseFragment {
      * Action when the user clicks
      */
     private void onNewRecordClicked() {
+        getSerial();
         if (!requestStoragePermission()) { //storage permission false
             //TcpConnection.getSharedInstance().sendMessage("M: No storage permission");
             BLTManager.sharedInstance().sendMessage("M: No storage permission");
@@ -699,14 +696,29 @@ public class HomeFragment extends BaseFragment {
 //        } else
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final String todaysDisplayDate = dateFormat.format(new Date());
-        String camera = SettingsUtil.sharedInstance().getCameraId();
-        System.out.println(camera + "_" + todaysDisplayDate);
-        createRecord(camera + "_" + todaysDisplayDate);
-        BLTManager.sharedInstance().sendMessage("Record created: " + camera + "_"
+        if (SettingsUtil.sharedInstance().getCameraId() == "") {
+            mCamera = getCameraId();
+            SettingsUtil.sharedInstance().setCameraId(mCamera);
+        } else {
+            mCamera = SettingsUtil.sharedInstance().getCameraId();
+        }
+        createRecord(mCamera + "_" + todaysDisplayDate);
+        BLTManager.sharedInstance().sendMessage("Record created: " + mCamera + "_"
                 + todaysDisplayDate);
         updateButtonStates();
         if (bluetooth) {
             mListener.onNewRecord();
+        }
+    }
+
+    private String getCameraId() {
+        switch (mSerialNumber) {
+            case "ad07160328c52f53ed":
+                return "C1";
+            case "ce0416048828440503":
+                return "C4";
+            default:
+                return "";
         }
     }
 

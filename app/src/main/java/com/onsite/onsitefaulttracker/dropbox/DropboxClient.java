@@ -6,6 +6,8 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.dropbox.core.DbxException;
+import com.dropbox.core.NetworkIOException;
+import com.dropbox.core.RetryException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.client2.DropboxAPI;
 import com.dropbox.client2.android.AndroidAuthSession;
@@ -52,7 +54,7 @@ public class DropboxClient {
 
     private boolean mConnected = false; // connected to dropbox
 
-    private static final long CHUNKED_UPLOAD_CHUNK_SIZE =  100 * (1024 * 1024);// 1L << 20; // 10MiB  = 10 * 2^20
+    private static final long CHUNKED_UPLOAD_CHUNK_SIZE =  1 * (1024 * 1024);// 1L << 20; // 10MiB  = 10 * 2^20
     private static final int CHUNKED_UPLOAD_MAX_ATTEMPTS = 5;
 
     // And later in some initialization function:
@@ -166,65 +168,95 @@ public class DropboxClient {
                 String sessionId = null;
                 long offset = 0L;
                 boolean close = false;
+                DbxException thrown = null;
                 UploadSessionCursor cursor = null;
                 mDropboxClientListener.uploadProgress(offset);
-                try {
-                    InputStream in = new FileInputStream(f);
-
-                    if (sessionId == null) {
-                        sessionId = mDbxClient.files().uploadSessionStart(close)
-                                .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE).getSessionId();
-                        offset += CHUNKED_UPLOAD_CHUNK_SIZE;
-                        mDropboxClientListener.uploadProgress(offset);
+                for (int i = 0; i < CHUNKED_UPLOAD_MAX_ATTEMPTS; ++i) {
+                    if (i > 0) {
+                        System.out.printf("Retrying chunked upload (%d / %d attempts)\n",
+                                i + 1, CHUNKED_UPLOAD_MAX_ATTEMPTS);
                     }
-                    cursor = new UploadSessionCursor(sessionId, offset);
 
-                    while ((_size - offset) > CHUNKED_UPLOAD_CHUNK_SIZE) {
+                    try {
+                        InputStream in = new FileInputStream(f);
 
-                        mDbxClient.files().uploadSessionAppendV2(cursor)
-                                .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE);
-                        offset += CHUNKED_UPLOAD_CHUNK_SIZE;
+                        if (sessionId == null) {
+                            sessionId = mDbxClient.files().uploadSessionStart(close)
+                                    .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE).getSessionId();
+                            offset += CHUNKED_UPLOAD_CHUNK_SIZE;
+                            mDropboxClientListener.uploadProgress(offset);
+                        }
                         cursor = new UploadSessionCursor(sessionId, offset);
-                        mDropboxClientListener.uploadProgress(offset);
 
+                        while ((_size - offset) > CHUNKED_UPLOAD_CHUNK_SIZE) {
+
+                            mDbxClient.files().uploadSessionAppendV2(cursor)
+                                    .uploadAndFinish(in, CHUNKED_UPLOAD_CHUNK_SIZE);
+                            offset += CHUNKED_UPLOAD_CHUNK_SIZE;
+                            cursor = new UploadSessionCursor(sessionId, offset);
+                            mDropboxClientListener.uploadProgress(offset);
+
+                        }
+                        long remaining = _size - offset;
+                        offset += remaining;
+                        mDropboxClientListener.uploadProgress(offset);
+                        CommitInfo commitInfo = CommitInfo.newBuilder("/" +
+                                record.recordFolderName + "/" + f.getName())
+                                .withMode(WriteMode.OVERWRITE)
+                                .withClientModified(new Date(f.lastModified()))
+                                .build();
+                        FileMetadata metadata = mDbxClient.files().uploadSessionFinish(cursor, commitInfo)
+                                .uploadAndFinish(in, remaining);
+                        mDropboxClientListener.uploadProgress(offset);
+                        System.out.println(metadata.toStringMultiline());
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onSuccess(null);
+                            }
+                        });
+                    } catch (RetryException ex) {
+                        thrown = ex;
+                        // RetryExceptions are never automatically retried by the client for uploads. Must
+                        // catch this exception even if DbxRequestConfig.getMaxRetries() > 0.
+                        try {
+                            Thread.sleep(ex.getBackoffMillis());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        continue;
+                    } catch (NetworkIOException ex) {
+                        thrown = ex;
+                        // network issue with Dropbox (maybe a timeout?) try again
+                        continue;
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (DbxException e) {
+                        Log.e(TAG, "DBx exception: " + e.getLocalizedMessage());
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onFailure("Failed to commit batch files");
+                            }
+                        });
+                    } catch (IOException ioEx) {
+                        Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
+                        ThreadUtil.executeOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Callback.onFailure("Failed to open file stream");
+                            }
+                        });
                     }
-                    long remaining = _size - offset;
-                    offset += remaining;
-                    mDropboxClientListener.uploadProgress(offset);
-                    CommitInfo commitInfo = CommitInfo.newBuilder("/" +
-                            record.recordFolderName + "/" + f.getName())
-                            .withMode(WriteMode.OVERWRITE)
-                            .withClientModified(new Date(f.lastModified()))
-                            .build();
-                    FileMetadata metadata = mDbxClient.files().uploadSessionFinish(cursor, commitInfo)
-                            .uploadAndFinish(in, remaining);
-                    mDropboxClientListener.uploadProgress(offset);
-                    System.out.println(metadata.toStringMultiline());
-                    ThreadUtil.executeOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Callback.onSuccess(null);
-                        }
-                    });
-                } catch (FileNotFoundException e){
-                    e.printStackTrace();
-                } catch (DbxException e) {
-                    Log.e(TAG, "DBx exception: " + e.getLocalizedMessage());
-                    ThreadUtil.executeOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Callback.onFailure("Failed to commit batch files");
-                        }
-                    });
-                } catch (IOException ioEx) {
-                    Log.e(TAG, "Error creating input stream: " + ioEx.getLocalizedMessage());
-                    ThreadUtil.executeOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Callback.onFailure("Failed to open file stream");
-                        }
-                    });
                 }
+                System.err.println("Maxed out upload attempts to Dropbox. Most recent error: "
+                        + thrown.getMessage());
+                ThreadUtil.executeOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Callback.onFailure("Maxed out upload attempts to Dropbox.");
+                    }
+                });
             }
         });
     }

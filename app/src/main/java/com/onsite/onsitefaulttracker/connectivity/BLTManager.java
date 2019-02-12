@@ -204,7 +204,6 @@ public class BLTManager extends Activity {
             }
         });
     }
-
     /**
      * Checks if bluetooth on the adapter is enabled.
      * @return true/false if blue is enabled.
@@ -212,56 +211,6 @@ public class BLTManager extends Activity {
     public boolean isBluetoothEnabled() {
         return mBluetoothAdapter.isEnabled();
     }
-
-    /**
-     * Enables android app to discover bluetooth devices using a broadcast receiver: DEPRECIATED
-     */
-
-//    private void enablePIN() {
-//        IntentFilter filter = new IntentFilter();
-//        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
-//    }
-
-//    public void startDiscovery() {
-//        if (mBluetoothAdapter.isDiscovering()) {
-//            //Bluetooth is already in discovery mode, we cancel to restart it again
-//            mBluetoothAdapter.cancelDiscovery();
-//          }
-//        Log.i(TAG, "Starting discovery");
-//        IntentFilter filter = new IntentFilter();
-//        filter.addAction(BluetoothDevice.ACTION_FOUND);
-//        filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);
-//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-//        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-//        mApplicationContext.registerReceiver(mReceiver, filter);
-//        if (mBluetoothAdapter.isDiscovering()) {
-//            // Bluetooth is already in discovery mode, we cancel to restart it again
-//            mBluetoothAdapter.cancelDiscovery();
-//          }
-        //mBluetoothAdapter.startDiscovery();
-
-//    }
-//    /**
-//     * Receives events when a bluetooth device has been discovered: DEPRECIATED
-//     */
-//    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-//        @Override
-//        public void onReceive(Context context, Intent intent) {
-//            Log.i(TAG, "onResumeCalled");
-//            String action = intent.getAction();
-//            // When discovery finds a device
-//            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                Log.i(TAG, "Device name: " + device.getName());
-//                Log.i(TAG, "Device address: " + device.getAddress());
-//            }
-//            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-//                Log.i(TAG, "onResume: Discovery Started");
-//            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-//                Log.i(TAG, "onResume: Discovery Finished");
-//            }
-//        }
-//    };
 
     /**
      * Class to handle the accept connection from bluetooth device behaves as server socket
@@ -388,11 +337,13 @@ public class BLTManager extends Activity {
                         System.out.println(line);
                         if (line.contains("Start")) {
                             if (!mRecording) {
-                                BusNotificationUtil.sharedInstance().postNotification(new BLTStartRecordingEvent());
+                                BusNotificationUtil.sharedInstance()
+                                        .postNotification(new BLTStartRecordingEvent());
                             }
                         } else if (line.contains("Stop")) {
                             if (mRecording) {
-                                BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
+                                BusNotificationUtil.sharedInstance()
+                                        .postNotification(new BLTStopRecordingEvent());
                             }
                         } else {
                             System.out.println(line);
@@ -401,7 +352,8 @@ public class BLTManager extends Activity {
                 } catch (IOException e) { //connection was lost
                     e.printStackTrace();
                 } finally {
-                    BusNotificationUtil.sharedInstance().postNotification(new BLTStopRecordingEvent());
+                    BusNotificationUtil.sharedInstance()
+                            .postNotification(new BLTStopRecordingEvent());
                     setState(STATE_NONE);
                     closeAll();
                 }
