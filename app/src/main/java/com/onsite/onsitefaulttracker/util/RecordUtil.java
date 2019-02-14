@@ -38,6 +38,9 @@ public class RecordUtil {
     // The folder where all records will be stored
     private static final String RECORD_STORAGE_FOLDER = "/OnSite";
 
+    private static final String EXTERNAL_SD_CARD =
+        "./storage/0000-0000/Android/data/com.onsite.onsitefaulttracker/files";
+
     // The record preferences name
     private static final String RECORD_PREFERENCES = "record_prefs";
 
@@ -481,17 +484,23 @@ public class RecordUtil {
      * @return
      */
     public String getPathForRecord(final Record record) {
-        File[] files = new File("./storage/0000-0000/Android/data/com.onsite.onsitefaulttracker/files").listFiles();
-        for (File aFile : files) {
-            if (aFile.isDirectory()) {
-                System.out.println(aFile.getAbsolutePath());
-            }
-        }
 
-       String baseFolder = getBaseFolder().getAbsolutePath();
-        //String baseFolder = "./storage/0000-0000/Android/data/com.onsite.onsitefaulttracker/files";
+        String baseFolder = getBaseFolder().getAbsolutePath();
+//        File sdCard = new File(EXTERNAL_SD_CARD);
+//        if (checkSDCard(sdCard)) {
+//            baseFolder = EXTERNAL_SD_CARD;
+//        } else {
+//            baseFolder = getBaseFolder().getAbsolutePath();
+//        }
         //System.out.println("Base Folder: " + baseFolder);
         return baseFolder + "/" + record.recordFolderName;
+    }
+
+
+    public boolean checkSDCard(File path) {
+        System.out.println(path.getAbsolutePath());
+        return true;
+
     }
 
     /**
@@ -503,6 +512,7 @@ public class RecordUtil {
         if (Environment.getExternalStorageDirectory() == null) {
             return null;
         }
+
         File rootFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + RECORD_STORAGE_FOLDER);
         if (!rootFolder.exists()) {
             if (!rootFolder.mkdir()) {
