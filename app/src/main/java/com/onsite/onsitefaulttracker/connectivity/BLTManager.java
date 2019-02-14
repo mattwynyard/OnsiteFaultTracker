@@ -60,6 +60,7 @@ public class BLTManager extends Activity {
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
     public static final int STATE_TIMEOUT = 4;  // now connected to a remote device
+    public static final int STATE_NOTENABLED = 9;  // bluetooth not enabled on phone
     // Shared Instance, to be initialized once and used throughout the application
     private static BLTManager sSharedInstance;
     // Application context
@@ -136,7 +137,7 @@ public class BLTManager extends Activity {
      *
      * @param state An integer defining the current connection state
      */
-    private synchronized void setState(int state) {
+    public synchronized void setState(int state) {
         Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
 
@@ -230,6 +231,7 @@ public class BLTManager extends Activity {
             // Create a new listening server socket
             Log.i(TAG, "NAME: " + NAME);
             Log.i(TAG, "NAME: " + UUID_UNSECURE);
+            Log.i(TAG, "ADDRESS = " + mBluetoothAdapter.getAddress());
             try {
                 if (secure) {
                     tmp = mBluetoothAdapter.listenUsingRfcommWithServiceRecord(NAME,

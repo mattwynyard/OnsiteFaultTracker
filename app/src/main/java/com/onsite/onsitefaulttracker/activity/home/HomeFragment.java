@@ -142,12 +142,6 @@ public class HomeFragment extends BaseFragment {
     private static final int REQUEST_ENABLE_BT = 6;
 
     private final int BT_TIMEOUT = 1200; //seconds
-
-    private enum SerialNumber {
-        ad07160328c52f53ed,
-        ce0416048828440503
-    }
-
     int PERMISSION_ALL = 9;
 
     String[] PERMISSIONS = {
@@ -251,6 +245,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        startGPS();
         Log.i(TAG, "HOME: CREATE");
     }
 
@@ -297,7 +292,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        startGPS();
+
         Log.i(TAG, "HOME: RESUMED");
         Log.i(TAG, "State = " + BLTManager.sharedInstance().getState());
         Log.i(TAG, "BT Enabled = " + BLTManager.sharedInstance().isBluetoothEnabled());
@@ -305,14 +300,10 @@ public class HomeFragment extends BaseFragment {
         //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: RESUMED");
         updateButtonStates();
 
-        if (BLTManager.sharedInstance().getState() == BLTManager.STATE_NONE &&
-                BLTManager.sharedInstance().isBluetoothEnabled()) {
-            if (mAdvertising) {
-                BLTManager.sharedInstance().start();
-                Log.i(TAG, "Starting listen");
-            }
-        }
+
     }
+
+
     /**
      * Action when fragment is paused,
      * updates the state of all the buttons
@@ -337,8 +328,14 @@ public class HomeFragment extends BaseFragment {
 //        TcpConnection.getSharedInstance().startTcpConnection();
 //
 //   }
-    private void setupBluetooth() {
-        BLTManager.sharedInstance().setupBluetooth();
+    private void startBluetooth() {
+        if (BLTManager.sharedInstance().getState() == BLTManager.STATE_NONE &&
+                BLTManager.sharedInstance().isBluetoothEnabled()) {
+            if (mAdvertising) {
+                BLTManager.sharedInstance().start();
+                Log.i(TAG, "Starting listen");
+            }
+        }
 
     }
 
@@ -481,12 +478,17 @@ public class HomeFragment extends BaseFragment {
             if (resultCode == Activity.RESULT_OK) {
                 Log.i(TAG, "Starting BT advertisement");
                 startAdvertising();
+            } else {
+                Log.i(TAG, "Bluetooth not enabled");
+                BLTManager.sharedInstance().setState(BLTManager.STATE_NOTENABLED);
+
             }
         } else if (requestCode == REQUEST_ENABLE_DISCOVERY) {
             Log.i(TAG, "Result code " + resultCode);
             if (resultCode == BT_TIMEOUT) { //user selected OK
                 Log.i(TAG, "Advertising accept");
                 mAdvertising = true;
+                startBluetooth();
             }
         }
     }
@@ -513,6 +515,8 @@ public class HomeFragment extends BaseFragment {
             mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
         } else if (BLTManager.sharedInstance().getState() == 1) {
             mConnectionStatusTextView.setText(getString(R.string.BTconnecting));
+        } else if (BLTManager.sharedInstance().getState() == 9) {
+            mConnectionStatusTextView.setText(getString(R.string.BTnotEnabled));
         } else {
             mConnectionStatusTextView.setText(getString(R.string.BTnotConnected));
         }
@@ -697,6 +701,7 @@ public class HomeFragment extends BaseFragment {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final String todaysDisplayDate = dateFormat.format(new Date());
         if (SettingsUtil.sharedInstance().getCameraId() == "") {
+
             mCamera = getCameraId();
             SettingsUtil.sharedInstance().setCameraId(mCamera);
         } else {
@@ -717,6 +722,8 @@ public class HomeFragment extends BaseFragment {
                 return "C1";
             case "ce0416048828440503":
                 return "C4";
+            case "988627395552575855":
+                return "C2";
             default:
                 return "";
         }

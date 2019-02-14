@@ -77,6 +77,7 @@ public class GPSUtil implements LocationListener {
      * @param context The application context
      */
     public static void initialize(final Context context) {
+
         sSharedInstance = new GPSUtil(context);
     }
 
@@ -109,6 +110,17 @@ public class GPSUtil implements LocationListener {
             //Log.v("Listener: ", "Location changed");
             double latitude = location.getLatitude();
             double longitude = location.getLongitude();
+            if (mLocationManager != null) {
+                if (ActivityCompat.checkSelfPermission( mContext, Manifest.permission
+                        .ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat
+                        .checkSelfPermission( mContext, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            } else {
+                Log.d(TAG, "Location Manager Null");
+            }
             mLocation = location;
             //String msg = "New Latitude: " + latitude + "New Longitude: " + longitude;
             //Toast.makeText(getBaseContext(),msg,Toast.LENGTH_LONG).show();
@@ -140,7 +152,8 @@ public class GPSUtil implements LocationListener {
         mContext = context;
         mLocationManager = (LocationManager)
                 mContext.getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this.mContext,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -152,6 +165,10 @@ public class GPSUtil implements LocationListener {
         }
         //mLocationManager.addNmeaListener(mNmeaListener);
         checkGPS();
+    }
+
+    public int getSatellites() {
+        return mSatellites;
     }
 
     public void checkGPS() {
@@ -174,7 +191,7 @@ public class GPSUtil implements LocationListener {
             public void onSatelliteStatusChanged(GnssStatus status) {
 
                 int satelliteCount = status.getSatelliteCount();
-                Log.d(TAG, "Satellites: " + satelliteCount);
+                //Log.d(TAG, "Satellites: " + satelliteCount);
                 mSatellites = 0;
                 for (int i = 0; i < satelliteCount; i++) {
                     if (status.usedInFix(i)) {
@@ -190,7 +207,7 @@ public class GPSUtil implements LocationListener {
                 Log.d(TAG, "First fix: " + String.valueOf(ttffMillis));
                 mFix = true;
                 Toast.makeText(mContext, "Succesfull satellite fix!",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -198,10 +215,9 @@ public class GPSUtil implements LocationListener {
                 super.onStarted();
                 Log.d(TAG, "GPS_EVENT_STARTED...");
                 Toast.makeText(mContext, "Acquiring satellite fix...",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
 
             }
-
             @Override
             public void onStopped() {
                 super.onStopped();
@@ -209,7 +225,8 @@ public class GPSUtil implements LocationListener {
 
             }
         };
-        if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this.mContext, Manifest.permission.
+                ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -242,7 +259,8 @@ public class GPSUtil implements LocationListener {
 
                 Log.d(TAG, "GPS Enabled");
                 if (mLocationManager != null) {
-                    Log.d(TAG, "GPS Provider enabled: " + mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+                    Log.d(TAG, "GPS Provider enabled: "
+                            + mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
                     mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
                     if (mLocation != null) {

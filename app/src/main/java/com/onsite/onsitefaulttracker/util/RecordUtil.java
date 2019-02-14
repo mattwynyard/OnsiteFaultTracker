@@ -481,19 +481,37 @@ public class RecordUtil {
      * @return
      */
     public String getPathForRecord(final Record record) {
-//        File[] files = new File("./storage/0000-0000").listFiles();
-//        for (File aFile : files) {
-//            if (aFile.isDirectory()) {
-//                System.out.println(aFile.getAbsolutePath());
-//            }
-//        }
-
-
-
+        File[] files = new File("./storage/0000-0000/Android/data/com.onsite.onsitefaulttracker/files").listFiles();
+        for (File aFile : files) {
+            if (aFile.isDirectory()) {
+                System.out.println(aFile.getAbsolutePath());
+            }
+        }
 
        String baseFolder = getBaseFolder().getAbsolutePath();
-        //String baseFolder = "/./storage/0000-0000/_OnSite";
+        //String baseFolder = "./storage/0000-0000/Android/data/com.onsite.onsitefaulttracker/files";
+        //System.out.println("Base Folder: " + baseFolder);
         return baseFolder + "/" + record.recordFolderName;
+    }
+
+    /**
+     * Return the base folder for storing records
+     *
+     * @return
+     */
+    public File getBaseFolder() {
+        if (Environment.getExternalStorageDirectory() == null) {
+            return null;
+        }
+        File rootFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + RECORD_STORAGE_FOLDER);
+        if (!rootFolder.exists()) {
+            if (!rootFolder.mkdir()) {
+                return null;
+            }
+        }
+        //System.out.println("Data directory: " + mContext.getExternalFilesDir(null).getAbsolutePath());
+        //File rootFolder = new File("./sdcard/DCIM");
+        return rootFolder;
     }
 
     /**
@@ -519,24 +537,7 @@ public class RecordUtil {
         }
     }
 
-    /**
-     * Return the base folder for storing records
-     *
-     * @return
-     */
-    public File getBaseFolder() {
-        if (Environment.getExternalStorageDirectory() == null) {
-            return null;
-        }
-        File rootFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + RECORD_STORAGE_FOLDER);
-        if (!rootFolder.exists()) {
-            if (!rootFolder.mkdir()) {
-                return null;
-            }
-        }
-        //File rootFolder = new File("./storage/0000-0000/_OnSite");
-        return rootFolder;
-    }
+
 
     /**
      * Reads the text from a file and returns it as a string

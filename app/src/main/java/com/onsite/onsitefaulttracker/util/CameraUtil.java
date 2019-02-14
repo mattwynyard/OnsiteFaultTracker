@@ -314,9 +314,6 @@ public class CameraUtil {
             return choices[0];
         }
     }
-
-
-
     /**
      * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
      */
@@ -328,11 +325,6 @@ public class CameraUtil {
             mCameraOpenCloseLock.release();
             mCameraDevice = cameraDevice;
             createCameraPreviewSession();
-
-
-
-
-
         }
 
         @Override

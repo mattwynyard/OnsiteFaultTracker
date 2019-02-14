@@ -17,6 +17,7 @@
     <string name="BTconnected">Bluetooth connected</string>
     <string name="BTconnecting">Bluetooth waiting for connection</string>
     <string name="BTnotConnected">Bluetooth not connected</string>
+    <string name="BTnotEnabled">Bluetooth not enabled</string>
 
     <string name="charger_not_connected_title">Warning</string>
     <string name="charger_not_connected_message">The charger is not connected, it is highly recommended you connect the charger before continuing</string>

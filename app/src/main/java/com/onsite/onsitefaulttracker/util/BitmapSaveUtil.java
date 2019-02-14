@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -136,7 +137,8 @@ public class BitmapSaveUtil {
                     float reductionScale = CalculationUtil.sharedInstance().estimateScaleValueForImageSize();
                     int outWidth = Math.round(bitmapToSave.getHeight() / widthDivisor);
                     int outHeight = bitmapToSave.getHeight();
-                    Bitmap sizedBmp = Bitmap.createScaledBitmap(bitmapToSave, Math.round(outWidth * reductionScale), Math.round(outHeight * reductionScale), true);
+                    Bitmap sizedBmp = Bitmap.createScaledBitmap(bitmapToSave,
+                            Math.round(outWidth * reductionScale), Math.round(outHeight * reductionScale), true);
 
                     Matrix matrix = new Matrix();
                     if (isLandscape) {
@@ -153,8 +155,10 @@ public class BitmapSaveUtil {
 
                     sizedBmp.recycle();
 
-                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil.sharedInstance().estimateQualityValueForImageSize(), fOutputStream);
-                    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil.sharedInstance().estimateQualityValueForImageSize(), rOutputStream);
+                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
+                            .sharedInstance().estimateQualityValueForImageSize(), fOutputStream);
+                    resizedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
+                            .sharedInstance().estimateQualityValueForImageSize(), rOutputStream);
                     rotatedBitmap.recycle();
                     resizedBitmap.recycle();
 
@@ -171,6 +175,13 @@ public class BitmapSaveUtil {
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
                     if (BLTManager.sharedInstance().getState() == 3) {
                         BLTManager.sharedInstance().sendMessage("C:" + filename + ".jpg");
+                        String satellites = Integer
+                                .toString(GPSUtil.sharedInstance().getSatellites());
+                        BLTManager.sharedInstance().sendMessage("S:" + satellites);
+                        BLTManager.sharedInstance().sendMessage("A:" + location.getAccuracy());
+                        BLTManager.sharedInstance().sendMessage("T:"
+                                + convertDate(location.getTime()));
+
                     }
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
@@ -188,6 +199,20 @@ public class BitmapSaveUtil {
         } else {
             return SaveBitmapResult.Save;
         }
+    }
+
+    private String convertDate(long timestamp) {
+        Calendar cal = Calendar.getInstance();
+        TimeZone tz = cal.getTimeZone();
+
+        /* date formatter in local timezone */
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        sdf.setTimeZone(tz);
+
+        /* print your timestamp and double check it's the date you expect */
+        String localTime = sdf.format(new Date(timestamp)); // I assume your timestamp is in seconds and you're converting to milliseconds?
+        Log.d("Time: ", localTime);
+        return localTime;
     }
                         //--EXIF FUNCTIONS--
 //TODO fix for negative altitudes
