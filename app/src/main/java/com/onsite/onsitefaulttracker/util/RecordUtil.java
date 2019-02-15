@@ -517,7 +517,7 @@ public class RecordUtil {
     /**
      * Return the base folder for storing records
      *
-     * @return
+     * @return - the root folder to store images and record file
      */
     public File getBaseFolder() {
 
