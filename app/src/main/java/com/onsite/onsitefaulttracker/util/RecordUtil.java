@@ -25,6 +25,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import static android.os.Environment.MEDIA_MOUNTED;
+import static android.os.Environment.getExternalStorageState;
+
 /**
  * Created by hihi on 6/23/2016.
  *
@@ -179,16 +182,24 @@ public class RecordUtil {
         SimpleDateFormat dateFormat = new SimpleDateFormat(FOLDER_DATE_FORMAT);
         newRecord.recordFolderName = dateFormat.format(newRecord.creationDate) + appendString;
 
+
+
         File baseFolder = getBaseFolder();
         if (baseFolder == null) {
             // TODO: Return an error
             return false;
         }
-        File newRecordPath = new File(baseFolder.getAbsoluteFile() + "/" + newRecord.recordFolderName);
-        if (!newRecordPath.mkdir()) {
-            // TODO: Return an error
-            return false;
+        File sdFolder = new File(EXTERNAL_SD_CARD);
+        if (checkSDCard(sdFolder)) {
+            File externalDir = mContext.getExternalFilesDir(newRecord.recordFolderName);
+        } else {
+            File newRecordPath = new File(baseFolder.getAbsoluteFile() + "/" + newRecord.recordFolderName);
+            if (!newRecordPath.mkdir()) {
+                // TODO: Return an error
+                return false;
+            }
         }
+
         mCurrentRecord = newRecord;
         System.out.println(mCurrentRecord.recordName);
 
@@ -435,7 +446,6 @@ public class RecordUtil {
                     return false;
                 }
             }
-
             writeToFile(jsonString, outputFile);
             return true;
         } else {
@@ -485,22 +495,23 @@ public class RecordUtil {
      */
     public String getPathForRecord(final Record record) {
 
-        String baseFolder = getBaseFolder().getAbsolutePath();
-//        File sdCard = new File(EXTERNAL_SD_CARD);
-//        if (checkSDCard(sdCard)) {
-//            baseFolder = EXTERNAL_SD_CARD;
-//        } else {
-//            baseFolder = getBaseFolder().getAbsolutePath();
-//        }
-        //System.out.println("Base Folder: " + baseFolder);
-        return baseFolder + "/" + record.recordFolderName;
+            return getBaseFolder().getAbsolutePath() + "/" + record.recordFolderName;
+
     }
 
+    /**
+     * Checks to see if phone has and external sd card inserted
+     * @return - true if present, false if not
+     */
 
     public boolean checkSDCard(File path) {
-        System.out.println(path.getAbsolutePath());
-        return true;
-
+        String isSDSupportedDevice = Environment.getExternalStorageState(path);
+        if(isSDSupportedDevice.equals("mounted")) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     /**
@@ -509,21 +520,25 @@ public class RecordUtil {
      * @return
      */
     public File getBaseFolder() {
+
         if (Environment.getExternalStorageDirectory() == null) {
             return null;
         }
-
-        File rootFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + RECORD_STORAGE_FOLDER);
-        if (!rootFolder.exists()) {
-            if (!rootFolder.mkdir()) {
-                return null;
+        File sdFolder = new File(EXTERNAL_SD_CARD);
+        if (checkSDCard(sdFolder)) {
+            Log.i("SD Card Available: ", "true");
+            return sdFolder;
+        } else {
+            Log.i("SD Card Available: ", "false");
+            File rootFolder = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + RECORD_STORAGE_FOLDER);
+            if (!rootFolder.exists()) {
+                if (!rootFolder.mkdir()) {
+                    return null;
+                }
             }
+            return rootFolder;
         }
-        //System.out.println("Data directory: " + mContext.getExternalFilesDir(null).getAbsolutePath());
-        //File rootFolder = new File("./sdcard/DCIM");
-        return rootFolder;
     }
-
     /**
      * Updates the record count variable by counting the number of records in storage
      */

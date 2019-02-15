@@ -207,10 +207,11 @@ public class HomeFragment extends BaseFragment {
 
             mAppVersion = view.findViewById(R.id.app_version_text_view);
             initAppVersionText();
-            enableBluetooth();
+
             if(!hasPermissions(mContext, PERMISSIONS)){
                 ActivityCompat.requestPermissions(getActivity(), PERMISSIONS, PERMISSION_ALL);
             }
+            enableBluetooth();
             updateButtonStates();
         }
         return view;
