@@ -78,7 +78,6 @@ public class BitmapSaveUtil {
             throw new RuntimeException("BitmapSaveUtil must be initialized in the Application class before use");
         }
     }
-
     /**
      * Saves a bitmap to storage taking in a temp number for now for the filename
      *
@@ -170,7 +169,9 @@ public class BitmapSaveUtil {
                     rOutputStream.close();
                     geoTagFile(file.getAbsolutePath(), location);
                     geoTagFile(file_resize.getAbsolutePath(), location);
-
+                    Log.i(TAG, "Latitude: " + location.getLatitude());
+                    Log.i(TAG, "Longitude: " + location.getLongitude());
+                    Log.i(TAG, "Accuracy: " + location.getAccuracy());
                     //send photo name to client
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
                     if (BLTManager.sharedInstance().getState() == 3) {
@@ -193,7 +194,6 @@ public class BitmapSaveUtil {
                 bitmapToSave.recycle();
             }
         });
-
         if (availableSpace <= LOW_DISK_SPACE_THRESHOLD) {
             return SaveBitmapResult.SaveLowDiskSpace;
         } else {
@@ -204,13 +204,10 @@ public class BitmapSaveUtil {
     private String convertDate(long timestamp) {
         Calendar cal = Calendar.getInstance();
         TimeZone tz = cal.getTimeZone();
-
         /* date formatter in local timezone */
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         sdf.setTimeZone(tz);
-
-        /* print your timestamp and double check it's the date you expect */
-        String localTime = sdf.format(new Date(timestamp)); // I assume your timestamp is in seconds and you're converting to milliseconds?
+        String localTime = sdf.format(new Date(timestamp));
         Log.d("Time: ", localTime);
         return localTime;
     }
@@ -242,12 +239,11 @@ public class BitmapSaveUtil {
             exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, dateStamp);
             exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, "WGS_84");
             exif.saveAttributes();
-
+//
 //            Log.d(TAG, "Wrote geotag" + path);
 //            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
 //            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
 //            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
-//            Log.d(TAG, "Bearing " + exif.getAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION));
         } catch (IOException e) {
             e.printStackTrace();
         }

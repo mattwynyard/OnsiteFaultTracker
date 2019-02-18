@@ -61,7 +61,7 @@ public class OnsiteApplication extends Application {
                     public void uncaughtException(Thread thread, Throwable e) {
                         System.out.println("AppCrash");
                         e.printStackTrace();
-                        BLTManager.sharedInstance().sendMessage("APP: Crash");
+                        BLTManager.sharedInstance().sendMessage("CRASH");
                         BusNotificationUtil.sharedInstance().
                                 postNotification(new BLTStopRecordingEvent());
                         //System.exit(1);

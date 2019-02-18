@@ -207,17 +207,17 @@ public class HomeFragment extends BaseFragment {
 
             mAppVersion = view.findViewById(R.id.app_version_text_view);
             initAppVersionText();
-
-            if(!hasPermissions(mContext, PERMISSIONS)){
+            enableBluetooth();
+            if(!hasPermissions(mContext, PERMISSIONS)) {
                 ActivityCompat.requestPermissions(getActivity(), PERMISSIONS, PERMISSION_ALL);
             }
-            enableBluetooth();
+
             updateButtonStates();
         }
         return view;
     }
 
-    public static boolean hasPermissions(Context context, String... permissions) {
+    public boolean hasPermissions(Context context, String... permissions) {
         if (context != null && permissions != null) {
             for (String permission : permissions) {
                 if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
@@ -246,7 +246,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        startGPS();
+
         Log.i(TAG, "HOME: CREATE");
     }
 
@@ -300,8 +300,6 @@ public class HomeFragment extends BaseFragment {
         Log.i(TAG, "Adverstising = " + mAdvertising);
         //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: RESUMED");
         updateButtonStates();
-
-
     }
 
 
@@ -335,6 +333,7 @@ public class HomeFragment extends BaseFragment {
             if (mAdvertising) {
                 BLTManager.sharedInstance().start();
                 Log.i(TAG, "Starting listen");
+                startGPS();
             }
         }
 
@@ -348,6 +347,7 @@ public class HomeFragment extends BaseFragment {
                 == PackageManager.PERMISSION_GRANTED)) {
             GPSUtil gps = new GPSUtil(mContext);
             Location location = gps.getLocation();
+
         } else {
             ActivityCompat.requestPermissions(getActivity(),
                     new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
@@ -490,6 +490,7 @@ public class HomeFragment extends BaseFragment {
                 Log.i(TAG, "Advertising accept");
                 mAdvertising = true;
                 startBluetooth();
+                //startGPS();
             }
         }
     }
@@ -506,7 +507,6 @@ public class HomeFragment extends BaseFragment {
         }
         boolean result = (hasCurrentRecord && (!compressed));
         mContinueRecordButton.setEnabled(result);
-        //mContinueRecordButton.setEnabled(hasCurrentRecord);
         mSubmitRecordButton.setEnabled(hasCurrentRecord);
         mPreviousRecordsButton.setEnabled(hasRecords);
 
@@ -548,20 +548,6 @@ public class HomeFragment extends BaseFragment {
             mCurrentRecordDate.setText("Created on: " + prefixString + simpleDateFormat.format(currentRecord.creationDate));
         }
     }
-
-//    /**
-//     * Checks if Bluetooth is enabled, otherwise, requests permission to enable it
-//     * Then enables Bluetooth if the user accepts
-//     */
-//    public void checkBluetoothEnabled() {
-//        if (!BLEManager.sharedInstance().isBluetoothEnabled()) {
-//            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-//        } else {
-//            BLEManager.sharedInstance().startAdvertising();
-//            // TODO:TEMPHACK BLEManager.sharedInstance().startScanning(getActivity());
-//        }
-//    }
 
     private void getFixStatus() {
         if (!GPSUtil.sharedInstance().getStatus()) {

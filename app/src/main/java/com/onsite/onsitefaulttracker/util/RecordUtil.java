@@ -99,7 +99,6 @@ public class RecordUtil {
     private RecordUtil(final Context context) {
         mContext = context;
         mGson = new Gson();
-
         loadRecordDetails();
     }
 
@@ -176,13 +175,10 @@ public class RecordUtil {
         newRecord.uploadTime = 0;
         newRecord.uploadedSizeKB = 0;
 
-
         ArrayList<Record> todaysRecords = getRecordsForDate(newRecord.creationDate);
         String appendString = todaysRecords != null && todaysRecords.size() > 0 ? "_" + (todaysRecords.size() + 1) : "";
         SimpleDateFormat dateFormat = new SimpleDateFormat(FOLDER_DATE_FORMAT);
         newRecord.recordFolderName = dateFormat.format(newRecord.creationDate) + appendString;
-
-
 
         File baseFolder = getBaseFolder();
         if (baseFolder == null) {
@@ -199,7 +195,6 @@ public class RecordUtil {
                 return false;
             }
         }
-
         mCurrentRecord = newRecord;
         System.out.println(mCurrentRecord.recordName);
 
@@ -261,7 +256,6 @@ public class RecordUtil {
                 resultList.add(record);
             }
         }
-
         if (resultList.size() > 0) {
             sortRecordList(resultList);
         }
@@ -314,7 +308,6 @@ public class RecordUtil {
         if (file.exists()) {
             deleteRecursive(file);
             mStoredRecordCount--;
-
         }
     }
 
@@ -328,7 +321,6 @@ public class RecordUtil {
                 deleteRecursive(child);
             }
         }
-
         fileOrDirectory.delete();
     }
 
@@ -357,7 +349,6 @@ public class RecordUtil {
                 }
             }
         }
-
         return resultList;
     }
 

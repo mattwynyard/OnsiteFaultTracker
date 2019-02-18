@@ -67,7 +67,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     private long SOUND_WARNING_INTERVAL = 5000;
 
     // The interval for checking the battery level
-    private long CHECK_BATTERY_INTERVAL = 600000;
+    private long CHECK_BATTERY_INTERVAL = 60000;
 
     // The level that if the battery falls below an alarm will sound
     private final float LOW_BATTERY_ALARM_LEVEL = 15.0f;
@@ -385,7 +385,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                     }
                 }
             }
-
         } else {
             // Every time an invalid frame is captured, increment consecutive blank frames.
             // If the consecutive blank frames rise too high, stop the recording and display
@@ -487,7 +486,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         Log.e(TAG, "* CHECK DEVICE FOR WARNING                            *");
         Log.e(TAG, "*******************************************************");
     }
-
     /**
      * Display the low disk space warning to the user
      */
@@ -535,7 +533,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             Log.e(TAG, "* LOW BATTERY                                         *");
             Log.e(TAG, "*******************************************************");
         }
-
     }
     /**
      * schedules the next frame to be snapped after the set time interval
@@ -585,8 +582,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             Log.i(TAG, "Stop recording called but already recording");
         }
     }
-
-
     // *******************************************************************
     //  Callback functions from camera util
     // *******************************************************************
@@ -601,7 +596,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     @Override
     public void onCameraError(int error) {
     }
-
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
      * {@link TextureView}.
@@ -628,9 +622,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture) {
         }
-
     };
-
     // ************************************************************
     //  Seek Bar delegate methods
     // ************************************************************
@@ -648,7 +640,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             CameraUtil.sharedInstance().onExposureSettingUpdated();
         }
     }
-
     /**
      * Action when the user starts move the value on the seek bar
      *
@@ -656,7 +647,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
      */
     public void onStartTrackingTouch(SeekBar seekBar) {
     }
-
     /**
      * Action when the user has stopped moving the value on the seek bar
      *
@@ -688,8 +678,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         Log.i(TAG, "Stop recording called from BLTEvent");
         stopRecording();
         getActivity().onBackPressed();
-
-
     }
     /**
      * Event from when user elects to pause recording
@@ -702,7 +690,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         stopRecording();
 
     }
-
     /**
      * Event from when user elects to resume recording
      *
@@ -713,7 +700,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         //HomeFragment.createInstance().onContinueButtonClicked();
         startRecording();
     }
-
     /**
      * Event from when TCP controller selects to resume recording
      *
@@ -724,7 +710,6 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         Log.i(TAG, "Start recording called from TCPEvent");
         startRecording();
     }
-
     /**
      * Event from when TCP controller selects to stop recording
      *
@@ -736,7 +721,5 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         //getFragmentManager().popBackStack();
         stopRecording();
         getActivity().onBackPressed();
-
     }
-
 }

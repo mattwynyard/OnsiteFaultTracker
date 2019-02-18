@@ -311,7 +311,6 @@ public class BLTManager extends Activity {
                 e.printStackTrace();
             }
         }
-
         /**
          * Restarts listening for a socket connection
          * after a one second wait
