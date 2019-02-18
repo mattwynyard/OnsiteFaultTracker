@@ -176,10 +176,25 @@ public class BitmapSaveUtil {
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
                     if (BLTManager.sharedInstance().getState() == 3) {
                         BLTManager.sharedInstance().sendMessage("C:" + filename + ".jpg");
+                        try {
+                            Thread.sleep(20);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         String satellites = Integer
                                 .toString(GPSUtil.sharedInstance().getSatellites());
                         BLTManager.sharedInstance().sendMessage("S:" + satellites);
+                        try {
+                            Thread.sleep(20);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         BLTManager.sharedInstance().sendMessage("A:" + location.getAccuracy());
+                        try {
+                            Thread.sleep(20);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         BLTManager.sharedInstance().sendMessage("T:"
                                 + convertDate(location.getTime()));
 
@@ -287,7 +302,7 @@ public class BitmapSaveUtil {
      * @return the converted coordinate as a string in the exif format
      */
     private String formatEXIFDouble(double x, int precision) {
-        Double d = x * precision;
+        Double d = Math.abs(x) * precision;
         int altitude = (int)Math.floor(d);
         return String.format("%d/" + String.valueOf(precision), altitude);
     }

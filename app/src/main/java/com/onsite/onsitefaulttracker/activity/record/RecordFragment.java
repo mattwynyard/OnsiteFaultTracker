@@ -408,31 +408,32 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("E: RECORDING_ERROR");
+        } else {
+
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* ERROR                                               *");
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* RECORDING ERROR                                     *");
+            Log.e(TAG, "*******************************************************");
+
+            new AlertDialog.Builder(getActivity())
+                    .setTitle(getString(R.string.record_error_title))
+                    .setMessage(getString(R.string.record_error_message))
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .show();
         }
-
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* ERROR                                               *");
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* RECORDING ERROR                                     *");
-        Log.e(TAG, "*******************************************************");
-
-        new AlertDialog.Builder(getActivity())
-                .setTitle(getString(R.string.record_error_title))
-                .setMessage(getString(R.string.record_error_message))
-                .setPositiveButton(getString(android.R.string.ok), null)
-                .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        getActivity().onBackPressed();
-                    }
-                })
-                .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        getActivity().onBackPressed();
-                    }
-                })
-                .show();
     }
 
     /**
@@ -446,31 +447,32 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("M:OUT OF DISK SPACE");
+        } else {
+
+            new AlertDialog.Builder(getActivity())
+                    .setTitle(getString(R.string.record_no_disk_space_title))
+                    .setMessage(getString(R.string.record_no_disk_space_message))
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .show();
+
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* ERROR                                               *");
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* NO DISK SPACE LEFT                                  *");
+            Log.e(TAG, "*******************************************************");
         }
-
-        new AlertDialog.Builder(getActivity())
-                .setTitle(getString(R.string.record_no_disk_space_title))
-                .setMessage(getString(R.string.record_no_disk_space_message))
-                .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        getActivity().onBackPressed();
-                    }
-                })
-                .setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        getActivity().onBackPressed();
-                    }
-                })
-                .setPositiveButton(getString(android.R.string.ok), null)
-                .show();
-
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* ERROR                                               *");
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* NO DISK SPACE LEFT                                  *");
-        Log.e(TAG, "*******************************************************");
     }
 
     /**
@@ -496,19 +498,20 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
             BLTManager.sharedInstance().sendMessage("M:LOW DISK SPACE");
+        } else {
+
+            new AlertDialog.Builder(getActivity())
+                    .setTitle(getString(R.string.record_low_disk_space_dialog_title))
+                    .setMessage(getString(R.string.record_low_disk_space_dialog_message))
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .show();
+
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* WARNING                                             *");
+            Log.e(TAG, "*******************************************************");
+            Log.e(TAG, "* LOW DISK SPACE                                      *");
+            Log.e(TAG, "*******************************************************");
         }
-
-        new AlertDialog.Builder(getActivity())
-                .setTitle(getString(R.string.record_low_disk_space_dialog_title))
-                .setMessage(getString(R.string.record_low_disk_space_dialog_message))
-                .setPositiveButton(getString(android.R.string.ok), null)
-                .show();
-
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* WARNING                                             *");
-        Log.e(TAG, "*******************************************************");
-        Log.e(TAG, "* LOW DISK SPACE                                      *");
-        Log.e(TAG, "*******************************************************");
     }
     /**
      * Display the low battery warning to the user
