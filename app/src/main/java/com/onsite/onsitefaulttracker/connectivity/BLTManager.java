@@ -7,8 +7,12 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.UUID;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -180,12 +184,20 @@ public class BLTManager extends Activity {
      * Send the recording status
      */
     public void sendMessage(final String message) {
-        ThreadUtil.executeOnNewThread(new Runnable() {
+
+        ThreadUtil.executeOnMainThread(new Runnable() {
             @Override
             public void run() {
                 if (mWriterOut != null) {
-                    mWriterOut.println(message);
-                    mWriterOut.flush();
+                    byte[] ascii = message.getBytes(StandardCharsets.US_ASCII);
+                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                    try {
+                        byteOut.write(ascii);
+                        byteOut.write(0x0a);
+                        byteOut.writeTo(mSocket.getOutputStream());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });

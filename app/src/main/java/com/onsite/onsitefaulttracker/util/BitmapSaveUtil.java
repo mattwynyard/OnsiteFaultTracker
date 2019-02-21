@@ -8,6 +8,7 @@ import android.support.media.ExifInterface;
 import android.util.Log;
 
 import com.onsite.onsitefaulttracker.connectivity.BLTManager;
+import com.onsite.onsitefaulttracker.connectivity.BLTMessage;
 import com.onsite.onsitefaulttracker.model.Record;
 
 import java.io.File;
@@ -167,6 +168,17 @@ public class BitmapSaveUtil {
                     fOutputStream.close();
                     rOutputStream.flush();
                     rOutputStream.close();
+//                    if (BLTManager.sharedInstance().getState() == 3) {
+//                        StringBuilder s = new StringBuilder();
+//                        s.append("R:");
+//                        s.append("T:" + convertDate(location.getTime()) + ";");
+//                        s.append("C:" + filename + ".jpg" + ";");
+//                        s.append("A:" + Float.toString(location.getAccuracy()) + ";");
+//                        s.append("S:" + GPSUtil.sharedInstance().getSatellites());
+//
+//                        BLTManager.sharedInstance().sendMessage(s.toString());
+//                    }
+                    long currentTime = new Date().getTime();
                     geoTagFile(file.getAbsolutePath(), location);
                     geoTagFile(file_resize.getAbsolutePath(), location);
                     Log.i(TAG, "Latitude: " + location.getLatitude());
@@ -174,31 +186,27 @@ public class BitmapSaveUtil {
                     Log.i(TAG, "Accuracy: " + location.getAccuracy());
                     //send photo name to client
                     //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
-                    if (BLTManager.sharedInstance().getState() == 3) {
-                        BLTManager.sharedInstance().sendMessage("C:" + filename + ".jpg");
-                        try {
-                            Thread.sleep(20);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
                         String satellites = Integer
                                 .toString(GPSUtil.sharedInstance().getSatellites());
-                        BLTManager.sharedInstance().sendMessage("S:" + satellites);
-                        try {
-                            Thread.sleep(20);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        BLTManager.sharedInstance().sendMessage("A:" + location.getAccuracy());
-                        try {
-                            Thread.sleep(20);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        BLTManager.sharedInstance().sendMessage("T:"
-                                + convertDate(location.getTime()));
 
-                    }
+                    StringBuilder message = new StringBuilder();
+                    message.append("T:" + convertDate(currentTime) + ",");
+                    message.append("C:" + filename + ",");
+                    message.append("S:" + satellites + ",");
+                    message.append("A:" + location.getAccuracy());
+                    BLTManager.sharedInstance().sendMessage(message.toString());
+
+
+//                        BLTMessage message = new BLTMessage();
+//                        message.setLength("R:");
+//                        message.setTime(convertDate(location.getTime()));
+//                        message.setPhoto(filename + ".jpg");
+//                        message.setAccuracy(Float.toString(location.getAccuracy()));
+//                        message.setSatellites(Integer.
+//                                toString(GPSUtil.sharedInstance().getSatellites()));
+//
+
+
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;

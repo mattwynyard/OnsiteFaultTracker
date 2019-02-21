@@ -349,7 +349,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 }
                 mRecord.photoCount++;
                 updatePhotoCountText();
-                BLTManager.sharedInstance().sendMessage("M:OK");
+                if (mRecord.photoCount % 60 == 0) {
+                    BLTManager.sharedInstance().sendMessage("M:OK");
+                }
             } else {
                 // There is not enough disk space to save any more photos,
                 // display an error and then close the fragment
