@@ -35,6 +35,10 @@ public class BitmapSaveUtil {
     // The low disk space threshold
     private static final long LOW_DISK_SPACE_THRESHOLD = 102400L;
 
+    private static final double THUMBNAIL_REDUCTION = 0.25;
+
+    int count = 0;
+
     // An enum which has all the SaveBitmapResult values
     public enum SaveBitmapResult {
         Save,
@@ -93,7 +97,7 @@ public class BitmapSaveUtil {
                                        final Location location) {
         Date nowDate = new Date();
         String halfAppend = "";
-        long time = nowDate.getTime();
+        final long time = nowDate.getTime();
         boolean useHalfAppend = (SettingsUtil.sharedInstance().getPictureFrequency() % 1000 > 0);
         if (useHalfAppend && (time % 1000) >= 500) {
             halfAppend = "_500";
@@ -107,6 +111,7 @@ public class BitmapSaveUtil {
         if (cameraIdPrefix == null) {
             cameraIdPrefix = "NOID";
         }
+
         cameraIdPrefix += "_";
         final String filename = cameraIdPrefix + "IMG" + dateString + halfAppend;
 
@@ -140,45 +145,49 @@ public class BitmapSaveUtil {
                     Bitmap sizedBmp = Bitmap.createScaledBitmap(bitmapToSave,
                             Math.round(outWidth * reductionScale), Math.round(outHeight * reductionScale), true);
 
-                    Matrix matrix = new Matrix();
-                    if (isLandscape) {
-                        matrix.postRotate(-90);
-                    }
-                    Bitmap rotatedBitmap = Bitmap.createBitmap(sizedBmp, 0, 0,
-                            sizedBmp.getWidth(), sizedBmp.getHeight(), matrix, true);
-                    Bitmap resizedBitmap = Bitmap.createScaledBitmap(rotatedBitmap,
-                            (int)(sizedBmp.getWidth() * 0.25), (int)(sizedBmp.getHeight() * 0.25), true);
+                    Log.i(TAG, "Landscape: " + isLandscape);
 
-                    if (rotatedBitmap == null) {
-                        return;
-                    }
+//                    Matrix matrix = new Matrix();
+//                    if (isLandscape) {
+//                        matrix.postRotate(-90);
+//                    }
+//                    Bitmap rotatedBitmap = Bitmap.createBitmap(sizedBmp, 0, 0,
+//                            sizedBmp.getWidth(), sizedBmp.getHeight(), matrix, true);
 
-                    sizedBmp.recycle();
+                    Bitmap resizedBitmap = Bitmap.createScaledBitmap(sizedBmp,
+                            (int)(sizedBmp.getWidth() * THUMBNAIL_REDUCTION),
+                            (int)(sizedBmp.getHeight() * THUMBNAIL_REDUCTION), true);
 
-                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
+//                    Bitmap tmpBitmap = Bitmap.createScaledBitmap(sizedBmp,
+//                            (int)(sizedBmp.getWidth() * THUMBNAIL_REDUCTION),
+//                            (int)(sizedBmp.getHeight() * THUMBNAIL_REDUCTION), true);
+
+
+
+//                    if (rotatedBitmap == null) {
+//                        return;
+//                    }
+
+
+
+//                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
+//                            .sharedInstance().estimateQualityValueForImageSize(), fOutputStream);
+                    sizedBmp.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
                             .sharedInstance().estimateQualityValueForImageSize(), fOutputStream);
                     resizedBitmap.compress(Bitmap.CompressFormat.JPEG, CalculationUtil
                             .sharedInstance().estimateQualityValueForImageSize(), rOutputStream);
-                    rotatedBitmap.recycle();
-                    resizedBitmap.recycle();
 
-                    bitmapToSave.recycle();
+                    //BLTManager.sharedInstance().sendPhoto(message.toString(), resizedBitmap);
+
+                    //sizedBmp.recycle();
+                    //rotatedBitmap.recycle();
+
 
                     fOutputStream.flush();
                     fOutputStream.close();
                     rOutputStream.flush();
                     rOutputStream.close();
-//                    if (BLTManager.sharedInstance().getState() == 3) {
-//                        StringBuilder s = new StringBuilder();
-//                        s.append("R:");
-//                        s.append("T:" + convertDate(location.getTime()) + ";");
-//                        s.append("C:" + filename + ".jpg" + ";");
-//                        s.append("A:" + Float.toString(location.getAccuracy()) + ";");
-//                        s.append("S:" + GPSUtil.sharedInstance().getSatellites());
-//
-//                        BLTManager.sharedInstance().sendMessage(s.toString());
-//                    }
-                    long currentTime = new Date().getTime();
+
                     geoTagFile(file.getAbsolutePath(), location);
                     geoTagFile(file_resize.getAbsolutePath(), location);
                     Log.i(TAG, "Latitude: " + location.getLatitude());
@@ -190,22 +199,23 @@ public class BitmapSaveUtil {
                                 .toString(GPSUtil.sharedInstance().getSatellites());
 
                     StringBuilder message = new StringBuilder();
-                    message.append("T:" + convertDate(currentTime) + ",");
+                    message.append("T:" + convertDate(time) + ",");
                     message.append("C:" + filename + ",");
                     message.append("S:" + satellites + ",");
                     message.append("A:" + location.getAccuracy());
+
+//                    if ((BLTManager.sharedInstance().getState() == 3)) {
+//                        if (count % 10 == 0) {
+//                            BLTManager.sharedInstance().sendPhoto(message.toString(), tmpBitmap);
+//                        } else {
+//                            BLTManager.sharedInstance().sendMessage(message.toString());
+//                        }
+//                        count++;
+//                    }
                     BLTManager.sharedInstance().sendMessage(message.toString());
-
-
-//                        BLTMessage message = new BLTMessage();
-//                        message.setLength("R:");
-//                        message.setTime(convertDate(location.getTime()));
-//                        message.setPhoto(filename + ".jpg");
-//                        message.setAccuracy(Float.toString(location.getAccuracy()));
-//                        message.setSatellites(Integer.
-//                                toString(GPSUtil.sharedInstance().getSatellites()));
-//
-
+                    sizedBmp.recycle();
+                    resizedBitmap.recycle();
+                    bitmapToSave.recycle();
 
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
@@ -214,7 +224,7 @@ public class BitmapSaveUtil {
                     e.printStackTrace();
                     return;
                 }
-                bitmapToSave.recycle();
+                //bitmapToSave.recycle();
             }
         });
         if (availableSpace <= LOW_DISK_SPACE_THRESHOLD) {

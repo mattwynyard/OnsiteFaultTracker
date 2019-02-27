@@ -707,10 +707,14 @@ public class HomeFragment extends BaseFragment {
         switch (mSerialNumber) {
             case "ad07160328c52f53ed":
                 return "C1";
-            case "ce0416048828440503":
-                return "C4";
             case "988627395552575855":
                 return "C2";
+            case "98862738354837315a":
+                return "C3";
+            case "ce0416048828440503":
+                return "C4";
+            case "ce12160cf826108d0c":
+                return "C5";
             default:
                 return "";
         }
