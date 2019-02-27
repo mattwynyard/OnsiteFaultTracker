@@ -7,8 +7,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -16,6 +19,7 @@ import android.content.Intent;
 
 import android.content.IntentFilter;
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.os.HardwarePropertiesManager;
 import android.util.Log;
 //Notifications
@@ -176,16 +180,87 @@ public class BLTManager extends Activity {
         }
     }
 
+    public void sendPhoto(final String header, final Bitmap bmp) {
+        ThreadUtil.executeOnNewThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    byte[] ascii = header.getBytes(StandardCharsets.US_ASCII);
+
+                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                    ByteArrayOutputStream photoOut = new ByteArrayOutputStream();
+                    //Bitmap bmp = BitmapFactory.decodeFile("/storage/emulated/0/OnSite/photo.jpg");
+                    //bmp.setConfig(Bitmap.Config.RGB_565);
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, photoOut);
+                    int width = bmp.getWidth();
+                    int height = bmp.getHeight();
+
+                    Log.i(TAG, "BMP_HEIGHT : " + height);
+                    Log.i(TAG, "BMP_WIDTH : " + width);
+
+                    System.out.println(byteOut.size());
+                    //Bitmap immutableBmp = Bitmap.createBitmap(bmp);
+
+                    int size = bmp.getRowBytes() * bmp.getHeight();
+                    //bmp.setConfig(Bitmap.Config.ARGB_8888);
+                    ByteBuffer buffer = ByteBuffer.allocate(size);
+
+                    //byte[] photo = new byte[byteOut.size()];
+                    //byteOut.write(photo);
+                    byte[] photo = photoOut.toByteArray();
+
+
+                    //int size = (int) f.length();
+                    String start = "PHOTO";
+                    byte[] prefix = start.getBytes(StandardCharsets.US_ASCII);
+
+                    Log.i(TAG, "BMP SIZE: " + size);
+
+                    byte [] messageLength = ByteBuffer.allocate(4).putInt(ascii.length).array();
+                    byte [] photoLength = ByteBuffer.allocate(4).putInt(photo.length).array();
+
+                    Log.i(TAG, "BYTES: " + photo.length);
+                    //reader.read(photo, 0, photo.length);
+                    //reader.close();
+
+                    byteOut.write(prefix); //ascii
+                    byteOut.write(messageLength); //int
+                    byteOut.write(ascii); //ascii
+                    byteOut.write(photoLength); //int
+                    byteOut.write(photo); //image data
+                    //byteOut.write(footer);
+
+                    System.out.println("BYTES: " + photoLength.length);
+                    byteOut.writeTo(mSocket.getOutputStream());
+                    mSocket.getOutputStream().flush();
+                    bmp.recycle();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
     /**
      * Send the recording status
      */
     public void sendMessage(final String message) {
-        ThreadUtil.executeOnNewThread(new Runnable() {
+        ThreadUtil.executeOnMainThread(new Runnable() {
             @Override
             public void run() {
                 if (mWriterOut != null) {
-                    mWriterOut.println(message);
-                    mWriterOut.flush();
+                    byte[] ascii = message.getBytes(StandardCharsets.US_ASCII);
+                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                    try {
+                        byteOut.write(ascii);
+                        byteOut.write(0x0a);
+                        Log.i(TAG, "PAYLOAD: " + byteOut.size());
+                        byteOut.writeTo(mSocket.getOutputStream());
+                        byteOut.reset();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
