@@ -12,7 +12,7 @@ import java.util.zip.ZipOutputStream;
 
 public class Compressor {
     private static final int BUFFER = 2048;
-    private static final int UPLOAD_LIMIT = 1 * (1024 * 1024); //File upload limit megaBytes
+    private static final int UPLOAD_LIMIT = 100 * (1024 * 1024); //File upload limit megaBytes
 
     private File[] _files;
     private String _zipFile;

@@ -480,20 +480,20 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mRecord.uploadedSizeKB = totalBytesUploaded / 1024;
         mRecord.uploadTime = (end - start) / 1000;
         //RecordUtil.sharedInstance().saveRecord(mRecord);
-        //RecordUtil.sharedInstance().saveCurrentRecord();
+        RecordUtil.sharedInstance().saveCurrentRecord();
 
         mDropboxClient.uploadNextFile(mRecord, mRecordFiles[0], new UploadCallback() {
             @Override
             public void onSuccess(Object object) {
                 mRecord.fileUploadCount++;
-                RecordUtil.sharedInstance().saveRecord(mRecord);
+                //RecordUtil.sharedInstance().saveRecord(mRecord);
                 RecordUtil.sharedInstance().saveCurrentRecord();
                 onUploadComplete();
             }
             @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, "Metadata upload failed");
-                RecordUtil.sharedInstance().saveRecord(mRecord);
+                //RecordUtil.sharedInstance().saveRecord(mRecord);
                 RecordUtil.sharedInstance().saveCurrentRecord();
                 mUploaded = false;
                 mUploading = false;
@@ -531,7 +531,7 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
         mRecord.totalUploadSizeKB = mRecord.totalSizeKB - mRecord.recordSizeKB;
         RecordUtil.sharedInstance().saveRecord(mRecord);
         RecordUtil.sharedInstance().updateRecordCount();
-        RecordUtil.sharedInstance().saveCurrentRecord();
+        //RecordUtil.sharedInstance().saveCurrentRecord();
     }
     /**
      * Action when the user clicks on submit, initiate photo compression and zip files
@@ -601,19 +601,39 @@ public class SubmitFragment extends BaseFragment implements DropboxClient.Dropbo
      * (mOriginalFiles) and the other (mResizeFiles) containing thumbnails. Ignores .rec file
      */
     private void splitRecordFiles() {
-        mOriginalFiles = new File[(mRecordFiles.length / 2)];
-        mResizeFiles = new File[(mRecordFiles.length / 2)];
-        for (int i = 1, j = 0; i < mRecordFiles.length; i += 2, j++) {
-            mOriginalFiles[j] = new File(mRecordFiles[i].getAbsolutePath());
-            totalBytesOriginal += mOriginalFiles[j].length();
-            mResizeFiles[j] = new File(mRecordFiles[i + 1].getAbsolutePath());
-            totalBytesResize += mResizeFiles[j].length();
+        try {
+            mOriginalFiles = new File[(mRecordFiles.length / 2)];
+            mResizeFiles = new File[(mRecordFiles.length / 2)];
+            for (int i = 1, j = 0; i < mRecordFiles.length; i += 2, j++) {
+                mOriginalFiles[j] = new File(mRecordFiles[i].getAbsolutePath());
+                totalBytesOriginal += mOriginalFiles[j].length();
+                mResizeFiles[j] = new File(mRecordFiles[i + 1].getAbsolutePath());
+                totalBytesResize += mResizeFiles[j].length();
+            }
+        } catch (Exception e){
+            Log.e(TAG, "Corrupted record file");
+            new AlertDialog.Builder(getActivity())
+                    .setTitle("Error")
+                    .setMessage("Corrupted record file: splitRecordFiles failed")
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            getActivity().onBackPressed();
+                        }
+                    })
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .show();
         }
-
+    }
 //        RecordUtil.sharedInstance().saveRecord(mRecord);
 
         //mOriginalFiles[mRecordFiles.length] = new File(mRecordFiles[0].getAbsolutePath());
-    }
 
     /**
      * Intialises a new Compressor object at set files to compress and path to save zip file to

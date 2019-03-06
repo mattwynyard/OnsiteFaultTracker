@@ -197,8 +197,13 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
     @Override
     public void onDetach() {
         super.onDetach();
+//        if (mStartedRecordingTime > 0) {
+//            long recordedTime = new Date().getTime() - mStartedRecordingTime;
+//            mRecord.totalRecordTime += recordedTime;
+//        }
         Log.i(TAG, "RECORD:DETACHED");
-        BLTManager.sharedInstance().sendMessage("RECORD:DETACHED");
+        //BLTManager.sharedInstance().sendMessage("RECORD:DETACHED");
+        BLTManager.sharedInstance().sendPoolMessage("RECORD:DETACHED");
 
     }
 
@@ -251,13 +256,13 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         }
         Log.i(TAG, "RECORD:PAUSED");
         CameraUtil.sharedInstance().closeCamera();
-        RecordUtil.sharedInstance().saveCurrentRecord();
+        RecordUtil.sharedInstance().saveRecord(mRecord);
         mRecording = false;
         //TcpConnection.getSharedInstance().setRecording(false);
         BLTManager.sharedInstance().setRecording(false);
         // Unregister to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
-        BLTManager.sharedInstance().sendMessage("RECORD:PAUSED");
+        BLTManager.sharedInstance().sendPoolMessage("RECORD:PAUSED");
         //TcpConnection.getSharedInstance().sendMessage("C: PAUSED");
         getActivity().finish(); //kills paused frame - new frame created when records resumes
     }
@@ -311,6 +316,8 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         });
     }
 
+
+
     /**
      * Take a snapshot and save it to the drive
      */
@@ -329,8 +336,9 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
             float ratio = (!isLandscape) ?
                             ((float)snapBitmap.getHeight()/(float)snapBitmap.getWidth()) :
                             ((float)snapBitmap.getWidth()/(float)snapBitmap.getHeight());
+            Location location = GPSUtil.sharedInstance().getLocation();
             BitmapSaveUtil.SaveBitmapResult saveResult = BitmapSaveUtil.sharedInstance()
-                    .saveBitmap(snapBitmap, mRecord, ratio, isLandscape, GPSUtil.sharedInstance().getLocation());
+                    .saveBitmap(snapBitmap, mRecord, ratio, isLandscape, location);
             long currentTime = new Date().getTime();
 
             // Check the result of saving the bitmap for low dis space or error
@@ -344,13 +352,18 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 
                     if (currentTime - mLastWarningSoundedTime >= SOUND_WARNING_INTERVAL) {
                         mLastWarningSoundedTime = currentTime;
-                        playWarningSound();
+                        //playWarningSound();
                     }
                 }
                 mRecord.photoCount++;
+                Log.i(TAG, "Photo Count: " + mRecord.photoCount);
                 updatePhotoCountText();
+                //GEOTAG photo
+                RecordUtil.sharedInstance().saveRecord(mRecord);
+                //RecordUtil.sharedInstance().saveCurrentRecord();
                 if (mRecord.photoCount % 60 == 0) {
-                    BLTManager.sharedInstance().sendMessage("M:OK");
+                    BLTManager.sharedInstance().sendPoolMessage("M:OK");
+
                 }
             } else {
                 // There is not enough disk space to save any more photos,
@@ -373,7 +386,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                 if (BLTManager.sharedInstance().getState() == 3) { //STATE_CONNECTED
                     int batteryLevel = Math.round(currentBatteryLevel);
                     String msg = "B:" + Integer.toString(batteryLevel) + "%";
-                    BLTManager.sharedInstance().sendMessage(msg);
+                    BLTManager.sharedInstance().sendPoolMessage(msg);
 //                    if (!TcpConnection.getSharedInstance().isConnected()) {
 //                        TcpConnection.getSharedInstance().sendMessage("B: not charging!");
 //                    }
@@ -383,7 +396,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
                             displayLowBatteryError();
                             mDisplayedLowBatteryError = true;
                         }
-                        playWarningSound();
+                        //playWarningSound();
                     }
                 }
             }
@@ -409,7 +422,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("E: RECORDING_ERROR");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("E: RECORDING_ERROR");
+            BLTManager.sharedInstance().sendPoolMessage("E:CAMERA ERROR");
         } else {
 
             Log.e(TAG, "*******************************************************");
@@ -448,7 +461,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("M: OUT OF DISK SPACE");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("M:OUT OF DISK SPACE");
+            BLTManager.sharedInstance().sendPoolMessage("M:OUT OF CAMERA SPACE");
         } else {
 
             new AlertDialog.Builder(getActivity())
@@ -499,7 +512,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("M: LOW DISK SPACE");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("M:LOW DISK SPACE");
+            BLTManager.sharedInstance().sendPoolMessage("M:LOW CAMERA SPACE");
         } else {
 
             new AlertDialog.Builder(getActivity())
@@ -523,20 +536,20 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //            TcpConnection.getSharedInstance().sendMessage("LOW_BATTERY");
 //        }
         if (BLTManager.sharedInstance().getState() == 3) {
-            BLTManager.sharedInstance().sendMessage("B:LOW_BATTERY");
+            BLTManager.sharedInstance().sendPoolMessage("B:LOW CAMERA BATTERY");
         } else {
 
-            new AlertDialog.Builder(getActivity())
-                    .setTitle(getString(R.string.record_low_battery_dialog_title))
-                    .setMessage(getString(R.string.record_low_battery_dialog_message))
-                    .setPositiveButton(getString(android.R.string.ok), null)
-                    .show();
-
-            Log.e(TAG, "*******************************************************");
-            Log.e(TAG, "* WARNING                                             *");
-            Log.e(TAG, "*******************************************************");
-            Log.e(TAG, "* LOW BATTERY                                         *");
-            Log.e(TAG, "*******************************************************");
+//            new AlertDialog.Builder(getActivity())
+//                    .setTitle(getString(R.string.record_low_battery_dialog_title))
+//                    .setMessage(getString(R.string.record_low_battery_dialog_message))
+//                    .setPositiveButton(getString(android.R.string.ok), null)
+//                    .show();
+//
+//            Log.e(TAG, "*******************************************************");
+//            Log.e(TAG, "* WARNING                                             *");
+//            Log.e(TAG, "*******************************************************");
+//            Log.e(TAG, "* LOW BATTERY                                         *");
+//            Log.e(TAG, "*******************************************************");
         }
     }
     /**

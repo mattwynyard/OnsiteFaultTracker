@@ -207,11 +207,12 @@ public class HomeFragment extends BaseFragment {
 
             mAppVersion = view.findViewById(R.id.app_version_text_view);
             initAppVersionText();
+            getSerial();
+            setBTName();
             enableBluetooth();
             if(!hasPermissions(mContext, PERMISSIONS)) {
                 ActivityCompat.requestPermissions(getActivity(), PERMISSIONS, PERMISSION_ALL);
             }
-
             updateButtonStates();
         }
         return view;
@@ -247,7 +248,7 @@ public class HomeFragment extends BaseFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Log.i(TAG, "HOME: CREATE");
+        Log.i(TAG, "HOME:CREATE");
     }
 
     /**
@@ -259,7 +260,7 @@ public class HomeFragment extends BaseFragment {
         super.onDetach();
         mListener = null;
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
-        Log.i(TAG, "HOME: DETACHED");
+        Log.i(TAG, "HOME:DETACHED");
     }
 
     /**
@@ -310,7 +311,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onPause() {
         super.onPause();
-        Log.i(TAG, "HOME: PAUSED");
+        Log.i(TAG, "HOME:PAUSED");
         //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME PAUSED");
         updateButtonStates();
     }
@@ -333,7 +334,9 @@ public class HomeFragment extends BaseFragment {
             if (mAdvertising) {
                 BLTManager.sharedInstance().start();
                 Log.i(TAG, "Starting listen");
+
                 startGPS();
+                //setBTName();
             }
         }
 
@@ -361,6 +364,7 @@ public class HomeFragment extends BaseFragment {
         if (getActivity().checkSelfPermission(Manifest.permission.READ_PHONE_STATE)
                 == PackageManager.PERMISSION_GRANTED) {
             mSerialNumber = Build.getSerial();
+            //BLTManager.sharedInstance().setBTName(mSerialNumber);
             Log.i(TAG, "DEVICE: " + mSerialNumber);
         } else {
             ActivityCompat.requestPermissions(getActivity(),
@@ -382,8 +386,8 @@ public class HomeFragment extends BaseFragment {
                 }
                 return true;
             } else {
-                String device = Build.getSerial();
-                Log.i(TAG, "DEVICE: " + device);
+                mSerialNumber = Build.getSerial();
+                Log.i(TAG, "DEVICE: " + mSerialNumber);
                 return true;
             }
         } else {
@@ -427,6 +431,7 @@ public class HomeFragment extends BaseFragment {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // All good!
                     getSerial();
+
                     return;
                 } else {
                     Log.i(TAG, "Need location permission");
@@ -572,7 +577,7 @@ public class HomeFragment extends BaseFragment {
         getSerial();
         if (!requestStoragePermission()) { //storage permission false
             //TcpConnection.getSharedInstance().sendMessage("M: No storage permission");
-            BLTManager.sharedInstance().sendMessage("M: No storage permission");
+            BLTManager.sharedInstance().sendPoolMessage("M:No storage permission");
             return;
         }
         //if (!TextUtils.isEmpty(SettingsUtil.sharedInstance().getCameraId())) {
@@ -584,7 +589,7 @@ public class HomeFragment extends BaseFragment {
             bluetooth = true;
             //checkForExistingRecords();
             if (!BatteryUtil.sharedInstance().isChargerConnected()) {
-                BLTManager.sharedInstance().sendMessage("B: not connected");
+                BLTManager.sharedInstance().sendPoolMessage("B:Not Charging");
                 checkForExistingRecords();
             } else {
                 checkForExistingRecords();
@@ -609,7 +614,7 @@ public class HomeFragment extends BaseFragment {
 ////        } else i
         if (BLTManager.sharedInstance().getState() == 3) {
             if (!BatteryUtil.sharedInstance().isChargerConnected()) {
-                BLTManager.sharedInstance().sendMessage("B: Not charging");
+                BLTManager.sharedInstance().sendPoolMessage("B:Not Charging");
             }
             if (mListener != null) {
                 mListener.onNewRecord();
@@ -695,12 +700,19 @@ public class HomeFragment extends BaseFragment {
             mCamera = SettingsUtil.sharedInstance().getCameraId();
         }
         createRecord(mCamera + "_" + todaysDisplayDate);
-        BLTManager.sharedInstance().sendMessage("Record created: " + mCamera + "_"
+        BLTManager.sharedInstance().sendPoolMessage("Record created: " + mCamera + "_"
                 + todaysDisplayDate);
         updateButtonStates();
         if (bluetooth) {
             mListener.onNewRecord();
         }
+    }
+
+    private void setBTName() {
+
+        String camera = getCameraId();
+        String btname = "OnSite_BLT_Adapter_" + camera;
+        BLTManager.sharedInstance().setBTName(btname);
     }
 
     private String getCameraId() {

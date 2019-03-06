@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import android.app.Activity;
@@ -23,6 +24,7 @@ import android.os.Environment;
 import android.os.HardwarePropertiesManager;
 import android.util.Log;
 //Notifications
+import com.onsite.onsitefaulttracker.activity.home.HomeFragment;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStartRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTStopRecordingEvent;
 import com.onsite.onsitefaulttracker.model.notifcation_events.BLTConnectedNotification;
@@ -34,6 +36,8 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 import com.onsite.onsitefaulttracker.util.CalculationUtil;
@@ -43,18 +47,19 @@ import static android.os.HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU;
 import static android.os.HardwarePropertiesManager.TEMPERATURE_CURRENT;
 
 /**
-        * Bluetooth Classic Device manager,
-        *
-        * Manages Bluetooth Classic devices,
-        * Provides an interface for communicating with Bluetooth Classic Devices
-        */
+ * Bluetooth Classic Device manager,
+ *
+ * Manages Bluetooth Classic devices,
+ * Provides an interface for communicating with Bluetooth Classic Devices
+ */
 
 public class BLTManager extends Activity {
 
     // Tag name for this class
     private static final String TAG = BLTManager.class.getSimpleName();
     // Adapter name for this android device when advertising
-    private static final String BLUETOOTH_ADAPTER_NAME = "OnSite_BLT_Adapter";
+    //private static final String BLUETOOTH_ADAPTER_NAME = "OnSite_BLT_Adapter_99"; //"OnSite_BLT_Adapter_99"
+    private static String BLUETOOTH_ADAPTER_NAME;
     // 128Bit Unique identifier for RFCOMM service
     private static final UUID UUID_UNSECURE = UUID.fromString("00030000-0000-1000-8000-00805F9B34FB");
     private static final String NAME = "OnsiteBluetoothserver";
@@ -80,6 +85,8 @@ public class BLTManager extends Activity {
 
     private boolean mRecording;
     private HardwarePropertiesManager mHPManager;
+
+    private ExecutorService mThreadPool;
 
     /**
      * initialize the BLTManager class,  to be called once from the application class
@@ -110,6 +117,8 @@ public class BLTManager extends Activity {
      */
     private BLTManager(final Application applicationContext) {
         mApplicationContext = applicationContext;
+        //mThreadPool = ThreadUtil.threadPool(6);
+        mThreadPool  = Executors.newFixedThreadPool(10);
         setupBluetooth();
         Log.i(TAG, "Bluetooth Setup");
     }
@@ -119,8 +128,8 @@ public class BLTManager extends Activity {
      */
     public void setupBluetooth() {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        mBluetoothAdapter.setName(BLUETOOTH_ADAPTER_NAME);
         mState = STATE_NONE;
+
 
     }
     /**
@@ -137,6 +146,13 @@ public class BLTManager extends Activity {
      */
     public synchronized int getState() {
         return mState;
+    }
+
+    public void setBTName(String id) {
+        Log.d(TAG, "Phone Id: " + id);
+        //BLUETOOTH_ADAPTER_NAME = id;
+        mBluetoothAdapter.setName(id);
+
     }
     /**
      * Set the current state of the chat connection
@@ -160,7 +176,7 @@ public class BLTManager extends Activity {
     public synchronized void start() {
         Log.d(TAG, "start");
 
-         //Cancel any thread attempting to make a connection
+        //Cancel any thread attempting to make a connection
         if (mAcceptThread != null) {
             mAcceptThread.cancel();
             mAcceptThread = null;
@@ -183,85 +199,102 @@ public class BLTManager extends Activity {
     }
 
 
-    public void sendPhoto(final String header, final Bitmap bmp) {
+//    public void sendPhoto(final String header, final Bitmap bmp) {
+//        ThreadUtil.executeOnNewThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//
+//                    //Bitmap tmpBmp = Bitmap.createBitmap(bmp);
+//                    byte[] ascii = header.getBytes(StandardCharsets.US_ASCII);
+//
+//                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+//                    ByteArrayOutputStream photoOut = new ByteArrayOutputStream();
+//                    //Bitmap bmp = BitmapFactory.decodeFile("/storage/emulated/0/OnSite/photo.jpg");
+//                    //bmp.setConfig(Bitmap.Config.ARGB_8888);
+//                    //bmp.setPremultiplied(true);
+//                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, photoOut);
+//                    int width = bmp.getWidth();
+//                    int height = bmp.getHeight();
+//
+//                    Log.i(TAG, "BMP_HEIGHT : " + height);
+//                    Log.i(TAG, "BMP_WIDTH : " + width);
+//
+//                    System.out.println(photoOut.size());
+//                    //Bitmap immutableBmp = Bitmap.createBitmap(bmp);
+//                    System.out.println("Byte count: " + bmp.getByteCount());
+//                    int size = bmp.getRowBytes() * bmp.getHeight();
+//
+//                    System.out.println("Row bytes: " + bmp.getRowBytes());
+//                    //bmp.setConfig(Bitmap.Config.ARGB_8888);
+////                    ByteBuffer buffer = ByteBuffer.allocate(size);
+////                    byte[] photo = new byte[size];
+////                    //buffer.order(ByteOrder.nativeOrder());
+////                    bmp.copyPixelsToBuffer(buffer);
+////                    bmp.recycle();
+////                    buffer.rewind();
+////                    buffer.get(photo);
+//                    //byte[] photo = buffer.array();
+//
+//                    //byte[] photo = new byte[photoOut.size()];
+//                    //byteOut.write(photo);
+//                    byte[] photo = photoOut.toByteArray();
+//
+//
+//                    //int size = (int) f.length();
+//                    String start = "PHOTO";
+//                    byte[] prefix = start.getBytes(StandardCharsets.US_ASCII);
+//
+//                    Log.i(TAG, "BMP SIZE: " + size);
+//
+//                    byte [] messageLength = ByteBuffer.allocate(4).putInt(ascii.length).array();
+//                    byte [] photoLength = ByteBuffer.allocate(4).putInt(photo.length).array();
+//
+//                    Log.i(TAG, "BYTES: " + photo.length);
+//                    //reader.read(photo, 0, photo.length);
+//                    //reader.close();
+//
+//                    byteOut.write(prefix); //ascii
+//                    byteOut.write(messageLength); //int
+//                    byteOut.write(ascii); //ascii
+//                    byteOut.write(photoLength); //int
+//                    byteOut.write(photo); //image data
+//                    //byteOut.write(footer);
+//
+//                    //System.out.println("BYTES: " + photoLength.length);
+//                    byteOut.writeTo(mSocket.getOutputStream());
+//                    mSocket.getOutputStream().flush();
+//
+//
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//    }
+
+//    /**
+//     * Send the recording status
+//     */
+    public void sendMessage(final String message) {
+
         ThreadUtil.executeOnNewThread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    byte[] ascii = header.getBytes(StandardCharsets.US_ASCII);
-
-                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-                    ByteArrayOutputStream photoOut = new ByteArrayOutputStream();
-                    //Bitmap bmp = BitmapFactory.decodeFile("/storage/emulated/0/OnSite/photo.jpg");
-                    //bmp.setConfig(Bitmap.Config.RGB_565);
-                    bmp.compress(Bitmap.CompressFormat.JPEG, 100, photoOut);
-                    int width = bmp.getWidth();
-                    int height = bmp.getHeight();
-
-                    Log.i(TAG, "BMP_HEIGHT : " + height);
-                    Log.i(TAG, "BMP_WIDTH : " + width);
-
-                    System.out.println(byteOut.size());
-                    //Bitmap immutableBmp = Bitmap.createBitmap(bmp);
-
-                    int size = bmp.getRowBytes() * bmp.getHeight();
-                    //bmp.setConfig(Bitmap.Config.ARGB_8888);
-                    ByteBuffer buffer = ByteBuffer.allocate(size);
-
-                    //byte[] photo = new byte[byteOut.size()];
-                    //byteOut.write(photo);
-                    byte[] photo = photoOut.toByteArray();
-
-
-                    //int size = (int) f.length();
-                    String start = "PHOTO";
-                    byte[] prefix = start.getBytes(StandardCharsets.US_ASCII);
-
-                    Log.i(TAG, "BMP SIZE: " + size);
-
-                    byte [] messageLength = ByteBuffer.allocate(4).putInt(ascii.length).array();
-                    byte [] photoLength = ByteBuffer.allocate(4).putInt(photo.length).array();
-
-                    Log.i(TAG, "BYTES: " + photo.length);
-                    //reader.read(photo, 0, photo.length);
-                    //reader.close();
-
-                    byteOut.write(prefix); //ascii
-                    byteOut.write(messageLength); //int
-                    byteOut.write(ascii); //ascii
-                    byteOut.write(photoLength); //int
-                    byteOut.write(photo); //image data
-                    //byteOut.write(footer);
-
-                    System.out.println("BYTES: " + photoLength.length);
-                    byteOut.writeTo(mSocket.getOutputStream());
-                    mSocket.getOutputStream().flush();
-                    bmp.recycle();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
-
-    /**
-     * Send the recording status
-     */
-    public void sendMessage(final String message) {
-
-        ThreadUtil.executeOnMainThread(new Runnable() {
-            @Override
-            public void run() {
                 if (mWriterOut != null) {
+                    Log.i(TAG, "ThreadCount: " + Thread.activeCount());
+
+
                     byte[] ascii = message.getBytes(StandardCharsets.US_ASCII);
                     ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
                     try {
                         byteOut.write(ascii);
-                        byteOut.write(0x0a);
-                        Log.i(TAG, "PAYLOAD: " + byteOut.size());
+                        byteOut.write(0x0a); //newline
+                        //Log.i(TAG, "PAYLOAD: " + byteOut.size());
                         byteOut.writeTo(mSocket.getOutputStream());
-                        byteOut.reset();
+                        mSocket.getOutputStream().flush();
+                        //byteOut.reset();
+                        byteOut.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -273,17 +306,63 @@ public class BLTManager extends Activity {
     /**
      * Send the recording status
      */
-    private void sendRecordingStatus() {
-        ThreadUtil.executeOnMainThread(new Runnable() {
+    public void sendPoolMessage(final String message) {
+
+        Runnable task = new Runnable() {
             @Override
             public void run() {
-                if ( mWriterOut != null) {
-                    //mWriterOut.println(mRecording ? "RECORDING\n" : "NOTRECORDING\n");
-                    sendMessage(mRecording ? "RECORDING" : "NOTRECORDING");
-                    mWriterOut.flush();
+                if (mWriterOut != null) {
+                    Log.i(TAG, "ThreadCount-Message: " + Thread.activeCount());
+                    System.out.println("Current thread : " + Thread.currentThread().getName());
+                    byte[] ascii = message.getBytes(StandardCharsets.US_ASCII);
+                    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                    try {
+                        byteOut.write(ascii);
+                        byteOut.write(0x0a); //newline
+                        //Log.i(TAG, "PAYLOAD: " + byteOut.size());
+                        byteOut.writeTo(mSocket.getOutputStream());
+                        mSocket.getOutputStream().flush();
+                        //byteOut.reset();
+                        byteOut.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        });
+        };
+        mThreadPool.submit(task);
+    }
+
+    /**
+     * Send the recording status
+     */
+//    private void sendRecordingStatus() {
+//        ThreadUtil.executeOnMainThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                if ( mWriterOut != null) {
+//                    sendMessage(mRecording ? "RECORDING" : "NOTRECORDING");
+//                    mWriterOut.flush();
+//                }
+//            }
+//        });
+//    }
+
+//    /**
+//     * Send the recording status
+//     */
+    private void sendRecordingStatus() {
+        sendMessage(mRecording ? "RECORDING" : "NOTRECORDING");
+//        Runnable task = new Runnable() {
+//            @Override
+//            public void run() {
+//                if ( mWriterOut != null) {
+//                    sendMessage(mRecording ? "RECORDING" : "NOTRECORDING");
+//                    mWriterOut.flush();
+//                }
+//            }
+//        };
+        //mThreadPool.submit(task);
     }
     /**
      * Checks if bluetooth on the adapter is enabled.
@@ -416,7 +495,7 @@ public class BLTManager extends Activity {
                     in = mSocket.getInputStream();
                     while ((length = in.read(buffer)) != -1) {
                         String line = new String(buffer, 0, length);
-                        System.out.println(line);
+                        //System.out.println(line);
                         if (line.contains("Start")) {
                             if (!mRecording) {
                                 BusNotificationUtil.sharedInstance()
@@ -428,7 +507,7 @@ public class BLTManager extends Activity {
                                         .postNotification(new BLTStopRecordingEvent());
                             }
                         } else {
-                            System.out.println(line);
+                            //System.out.println(line);
                         }
                     }
                 } catch (IOException e) { //connection was lost

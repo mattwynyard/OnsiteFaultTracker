@@ -125,7 +125,8 @@ public class DropboxClient {
             @Override
             public void run() {
                 try {
-                    client.files().createFolderV2("/" + record.recordFolderName);
+
+                    client.files().createFolderV2("/" + record.recordName);
                     ThreadUtil.executeOnMainThread(new Runnable() {
                         @Override
                         public void run() {
@@ -201,7 +202,7 @@ public class DropboxClient {
                         offset += remaining;
                         mDropboxClientListener.uploadProgress(offset);
                         CommitInfo commitInfo = CommitInfo.newBuilder("/" +
-                                record.recordFolderName + "/" + f.getName())
+                                record.recordName + "/" + f.getName())
                                 .withMode(WriteMode.OVERWRITE)
                                 .withClientModified(new Date(f.lastModified()))
                                 .build();
@@ -287,7 +288,7 @@ public class DropboxClient {
                     Log.i(TAG, "Bytes to upload: " +
                             String.valueOf(nextFileToUpload.length()/1024));
                     FileMetadata response = mDbxClient.files().uploadBuilder("/" +
-                            record.recordFolderName + "/" + nextFileToUpload.getName())
+                            record.recordName + "/" + nextFileToUpload.getName())
                             .withMode(WriteMode.OVERWRITE)
                             .uploadAndFinish(finStream);
 

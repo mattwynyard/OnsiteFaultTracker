@@ -2,6 +2,9 @@ package com.onsite.onsitefaulttracker.util;
 
 import android.os.Handler;
 import android.os.Looper;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by hihi on 6/13/2016.
@@ -11,6 +14,16 @@ import android.os.Looper;
  * or a background thread.
  */
 public class ThreadUtil {
+
+//    /**
+//     * Creates a executor service with a fixed number of threads
+//     * @param number the number of threads to create in the thread pool
+//     * @return the excutor service (thread pool)
+//     */
+//    public static ExecutorService threadPool(int number) {
+//        ExecutorService executor  = Executors.newFixedThreadPool(number);
+//        return executor;
+//    }
 
     /**
      * ensures code is executed on the main thread.
