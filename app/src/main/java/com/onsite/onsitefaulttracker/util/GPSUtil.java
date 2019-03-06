@@ -25,6 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
 
 import android.os.Environment;
 import android.support.media.ExifInterface;
@@ -298,42 +299,69 @@ public class GPSUtil implements LocationListener {
         return mLocation;
     }
 
-    //--EXIF FUNCTIONS--
-//TODO fix for negative altitudes
-    public void geoTagFile(String path, Location location) {
-        File f = new File(path);
-        long time = location.getTime();
+    public void geoTagFile(String path, Location location, long time) {
         String timeStamp = getDateTimeStamp(time, "time");
         String dateStamp = getDateTimeStamp(time, "date");
-        ExifInterface exif;
-        try {
-            exif = new ExifInterface(path);
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE,
-                    DMS(location.getLatitude(), 10000));
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, location.getLatitude()
-                    < 0 ? "S" : "N");
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE,
-                    DMS(location.getLongitude(), 10000));
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, location.getLongitude()
-                    < 0 ? "W" : "E");
-            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE,
-                    formatEXIFDouble(location.getAltitude(), 100));
-            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, location.getAltitude()
-                    < 0 ? "1" : "0");
-            exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION,
-                    formatEXIFDouble((double)location.getBearing(), 100));
-            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, timeStamp);
-            exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, dateStamp);
-            exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, "WGS_84");
-            exif.saveAttributes();
+        String datum = "WGS_84";
+        Double latitude_ref = location.getLatitude();
+        Double longitude_ref = location.getLongitude();
+        Double altitude_ref = location.getAltitude();
+        String bearing = formatEXIFDouble((double)location.getBearing(), 100);
+
+        String latitude = DMS(latitude_ref, 10000);
+        String longitude = DMS(longitude_ref, 10000);
+        String altitude = formatEXIFDouble(altitude_ref, 100);
+
+
+        writeGeoTag(path, latitude, latitude_ref, longitude, longitude_ref, altitude, altitude_ref,
+                bearing, timeStamp, dateStamp, datum);
+    }
+
+    //--EXIF FUNCTIONS--
+//TODO fix for negative altitudes
+    public void writeGeoTag(final String path, final String latitude, final Double latitude_ref,
+                            final String longitude, final Double longitude_ref,
+                            final String altitude, final Double altitude_ref, final String bearing,
+                            final String timeStamp, final String dateStamp, final String datum) {
+
+        //ExifInterface exif = null;
+        ExecutorService threadPool = BLTManager.sharedInstance().getThreadPool();
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ExifInterface exif = new ExifInterface(path);
+                    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE,
+                            latitude);
+                    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude_ref
+                            < 0 ? "S" : "N");
+                    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE,
+                            longitude);
+                    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude_ref
+                            < 0 ? "W" : "E");
+                    exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE,
+                            altitude);
+                    exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, altitude_ref
+                            < 0 ? "1" : "0");
+                    exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION,
+                            bearing);
+                    exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, timeStamp);
+                    exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, dateStamp);
+                    exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, datum);
+                    exif.saveAttributes();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        threadPool.execute(task);
+
 //
 //            Log.d(TAG, "Wrote geotag" + path);
 //            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
 //            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
 //            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
     private String getDateTimeStamp(long gpsTime, String type) {

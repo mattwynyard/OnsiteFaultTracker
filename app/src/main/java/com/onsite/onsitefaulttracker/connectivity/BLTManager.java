@@ -38,9 +38,13 @@ import java.io.PrintWriter;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 import com.onsite.onsitefaulttracker.util.CalculationUtil;
+import com.onsite.onsitefaulttracker.util.ThreadFactoryUtil;
 import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
 import static android.os.HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU;
@@ -87,6 +91,7 @@ public class BLTManager extends Activity {
     private HardwarePropertiesManager mHPManager;
 
     private ExecutorService mThreadPool;
+    public ThreadPoolExecutor mThreadPoolExecutor;
 
     /**
      * initialize the BLTManager class,  to be called once from the application class
@@ -118,9 +123,17 @@ public class BLTManager extends Activity {
     private BLTManager(final Application applicationContext) {
         mApplicationContext = applicationContext;
         //mThreadPool = ThreadUtil.threadPool(6);
+        ThreadFactoryUtil factory = new ThreadFactoryUtil("message");
         mThreadPool  = Executors.newFixedThreadPool(10);
+        mThreadPoolExecutor = new ThreadPoolExecutor(10, 20, 60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<Runnable>(), factory,
+                new ThreadPoolExecutor.CallerRunsPolicy());
         setupBluetooth();
         Log.i(TAG, "Bluetooth Setup");
+    }
+
+    public ThreadPoolExecutor getThreadPool(){
+        return mThreadPoolExecutor;
     }
 
     /**
@@ -283,8 +296,6 @@ public class BLTManager extends Activity {
             public void run() {
                 if (mWriterOut != null) {
                     Log.i(TAG, "ThreadCount: " + Thread.activeCount());
-
-
                     byte[] ascii = message.getBytes(StandardCharsets.US_ASCII);
                     ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
                     try {
@@ -330,7 +341,13 @@ public class BLTManager extends Activity {
                 }
             }
         };
-        mThreadPool.submit(task);
+        mThreadPoolExecutor.execute(task);
+        //Log.d(TAG, "TASK COUNT: " + mThreadPoolExecutor.getTaskCount());
+        Log.d(TAG, "Thread count: " + mThreadPoolExecutor.getActiveCount());
+        Log.d(TAG, "Outstanding tasks: " + (mThreadPoolExecutor.getTaskCount()
+                - mThreadPoolExecutor.getCompletedTaskCount()));
+        Log.d(TAG, "Queue size: " + mThreadPoolExecutor.getQueue().size());
+        //mThreadPool.submit(task);
     }
 
     /**
@@ -352,7 +369,7 @@ public class BLTManager extends Activity {
 //     * Send the recording status
 //     */
     private void sendRecordingStatus() {
-        sendMessage(mRecording ? "RECORDING" : "NOTRECORDING");
+        sendMessage(mRecording ? "RECORDING," : "NOTRECORDING,");
 //        Runnable task = new Runnable() {
 //            @Override
 //            public void run() {
@@ -430,7 +447,7 @@ public class BLTManager extends Activity {
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
                         //mWriterOut.println("CONNECTED");
-                        sendMessage("CONNECTED");
+                        sendMessage("CONNECTED,");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

@@ -97,6 +97,10 @@ public class BitmapSaveUtil {
             throw new RuntimeException("BitmapSaveUtil must be initialized in the Application class before use");
         }
     }
+
+    public ExecutorService getThreadPool() {
+        return mThreadPool;
+    }
     /**
      * Saves a bitmap to storage taking in a temp number for now for the filename
      *
@@ -108,10 +112,10 @@ public class BitmapSaveUtil {
                                        final Record record,
                                        final float widthDivisor,
                                        final boolean isLandscape,
-                                       final Location location) {
+                                       final Location location,
+                                       final long time) {
         Date nowDate = new Date();
         String halfAppend = "";
-        final long time = nowDate.getTime();
         boolean useHalfAppend = (SettingsUtil.sharedInstance().getPictureFrequency() % 1000 > 0);
         if (useHalfAppend && (time % 1000) >= 500) {
             halfAppend = "_500";
@@ -192,35 +196,14 @@ public class BitmapSaveUtil {
                     rOutputStream.flush();
                     rOutputStream.close();
 
-                    sendMessage(time, filename, location);
-                    //GPSUtil.sharedInstance().geoTagFile(file.getAbsolutePath(), location);
-                    //GPSUtil.sharedInstance().geoTagFile(file_resize.getAbsolutePath(), location);
+                    String message = buildMessage(time, filename, location);
 
-                    //Log.i(TAG, "Latitude: " + location.getLatitude());
-                    //Log.i(TAG, "Longitude: " + location.getLongitude());
-                    //Log.i(TAG, "Accuracy: " + location.getAccuracy());
-                    //send photo name to client
-                    //TcpConnection.getSharedInstance().sendMessage(filename + ".jpg");
-//                    String satellites = Integer
-//                            .toString(GPSUtil.sharedInstance().getSatellites());
-//
-//                    StringBuilder message = new StringBuilder();
-//                    message.append("T:" + convertDate(time) + ",");
-//                    message.append("C:" + shortFileName + ",");
-//                    message.append("S:" + satellites + ",");
-//                    message.append("A:" + location.getAccuracy());
+                    sendMessage(message);
+                    String _file = file.getAbsolutePath();
+                    String _rfile = file_resize.getAbsolutePath();
+                    GPSUtil.sharedInstance().geoTagFile(_file, location, time);
+                    GPSUtil.sharedInstance().geoTagFile(_rfile, location, time);
 
-//                    if ((BLTManager.sharedInstance().getState() == 3)) {
-//                        if (count % 10 == 0) {
-//                            BLTManager.sharedInstance().sendPhoto(message.toString(), resizedBitmap);
-//                        } else {
-//                            BLTManager.sharedInstance().sendMessage(message.toString());
-//                        }
-//                        count++;
-//                    }
-                    //BLTManager.sharedInstance().sendMessage(message.toString());
-//                    BLTManager.sharedInstance().sendPoolMessage(message.toString());
-//                    Log.i(TAG, "Photo Saved");
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return;
@@ -334,24 +317,27 @@ public class BitmapSaveUtil {
         }
     }
 
-    private void sendMessage(final long time, final String file, final Location location ) {
-        Runnable messgaeBuild = new Runnable() {
+    private String buildMessage(long time, String file, Location location) {
+        String satellites = Integer
+                .toString(GPSUtil.sharedInstance().getSatellites());
+
+        StringBuilder messageString = new StringBuilder();
+        messageString.append("T:" + convertDate(time) + "|");
+        messageString.append(file + "|");
+        messageString.append(satellites + "|");
+        messageString.append((int)location.getAccuracy() + ",");
+        String message = messageString.toString();
+        return message;
+    }
+
+    private void sendMessage(final String message ) {
+        Runnable messgaeSend = new Runnable() {
             @Override
             public void run() {
-                String satellites = Integer
-                        .toString(GPSUtil.sharedInstance().getSatellites());
-
-                StringBuilder message = new StringBuilder();
-                message.append("T:" + convertDate(time) + ",");
-                message.append("C:" + file + ",");
-                message.append("S:" + satellites + ",");
-                message.append("A:" + location.getAccuracy());
-                //final meesage -
-                BLTManager.sharedInstance().sendPoolMessage(message.toString());
-                //message
+                BLTManager.sharedInstance().sendPoolMessage(message);
             }
         };
-        mThreadPool.submit(messgaeBuild);
+        mThreadPool.execute(messgaeSend);
 
     }
 
@@ -365,99 +351,5 @@ public class BitmapSaveUtil {
         //Log.d("Time: ", localTime);
         return localTime;
     }
-//                        //--EXIF FUNCTIONS--
-////TODO fix for negative altitudes
-//    private void geoTagFile(String path, Location location) {
-//        File f = new File(path);
-//        long time = location.getTime();
-//        String timeStamp = getDateTimeStamp(time, "time");
-//        String dateStamp = getDateTimeStamp(time, "date");
-//        ExifInterface exif;
-//        try {
-//            exif = new ExifInterface(path);
-//            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE,
-//                    DMS(location.getLatitude(), 10000));
-//            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, location.getLatitude()
-//                    < 0 ? "S" : "N");
-//            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE,
-//                    DMS(location.getLongitude(), 10000));
-//            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, location.getLongitude()
-//                    < 0 ? "W" : "E");
-//            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE,
-//                    formatEXIFDouble(location.getAltitude(), 100));
-//            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, location.getAltitude()
-//                    < 0 ? "1" : "0");
-//            exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION,
-//                    formatEXIFDouble((double)location.getBearing(), 100));
-//            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, timeStamp);
-//            exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, dateStamp);
-//            exif.setAttribute(ExifInterface.TAG_GPS_MAP_DATUM, "WGS_84");
-//            exif.saveAttributes();
-////
-////            Log.d(TAG, "Wrote geotag" + path);
-////            Log.d(TAG, "Latitude " + exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
-////            Log.d(TAG, "Longitude " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
-////            Log.d(TAG, "Altitude " + exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private String getDateTimeStamp(long gpsTime, String type) {
-//        Date date = new Date(gpsTime);
-//        DateFormat dateformater = new SimpleDateFormat("yyyyMMddHHmmssZZZZZ");
-//        dateformater.setTimeZone(TimeZone.getDefault());
-//        String timestamp = dateformater.format(date);
-//
-//        if (type.equals("date")) {
-//            StringBuilder s = new StringBuilder();
-//            String year = timestamp.substring(0,4);
-//            String month = timestamp.substring(4,6);
-//            String day = timestamp.substring(6,8);
-//            s.append(day);
-//            s.append(":");
-//            s.append(month);
-//            s.append(":");
-//            s.append(year);
-//            return s.toString();
-//        } else {
-//            StringBuilder s = new StringBuilder();
-//            String hour = timestamp.substring(8,10);
-//            String minutes = timestamp.substring(10,12);
-//            String seconds = timestamp.substring(12,14);
-//            //String zone = timestamp.substring(14,20);
-//            s.append(hour);
-//            s.append(":");
-//            s.append(minutes);
-//            s.append(":");
-//            s.append(seconds);
-//            return s.toString();
-//        }
-//    }
-//    /**
-//     * Converts a double value to the exif format
-//     * @param x - the number to convert
-//     * @param precision - the multiplier for altitude precision i.e the number of decimal places.
-//     * @return the converted coordinate as a string in the exif format
-//     */
-//    private String formatEXIFDouble(double x, int precision) {
-//        Double d = Math.abs(x) * precision;
-//        int altitude = (int)Math.floor(d);
-//        return String.format("%d/" + String.valueOf(precision), altitude);
-//    }
-//    /**
-//     * Converts decimal lat/long coordinate to degrees, minutes, seconds. The returned string is in
-//     * the exif format
-//     *
-//     * @param x - the coordinate to convert
-//     * @param precision - the multiplier for seconds precision
-//     * @return the converted coordinate as a string in the exif format
-//     */
-//    private String DMS(double x,  int precision) {
-//        double d = Math.abs(x);
-//        int degrees = (int) Math.floor(d);
-//        int minutes = (int) Math.floor(((d - (double)degrees) * 60));
-//        int seconds = (int)(((((d - (double)degrees) * 60) - (double)minutes) * 60) * precision);
-//        return String.format("%d/1,%d/1,%d/" + precision, degrees, minutes, seconds);
-//    }
+
 } //end class

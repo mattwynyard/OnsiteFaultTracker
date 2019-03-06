@@ -261,6 +261,7 @@ public class HomeFragment extends BaseFragment {
         mListener = null;
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
         Log.i(TAG, "HOME:DETACHED");
+        BLTManager.sharedInstance().sendPoolMessage("HOME:DETACHED");
     }
 
     /**
@@ -270,7 +271,7 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onStop() {
         super.onStop();
-        Log.i(TAG, "HOME: STOPPED");
+        Log.i(TAG, "HOME:STOPPED");
         //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: STOPPED");
         //updateButtonStates();
     }
@@ -282,7 +283,8 @@ public class HomeFragment extends BaseFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.i(TAG, "HOME: DESTROYED");
+        Log.i(TAG, "HOME:DESTROYED");
+        BLTManager.sharedInstance().sendPoolMessage("HOME:DESTROYED");
         //TcpConnection.getSharedInstance().sendHomeWindowStatus("HOME: DESTROYED");
         //updateButtonStates();
     }
@@ -295,7 +297,7 @@ public class HomeFragment extends BaseFragment {
     public void onResume() {
         super.onResume();
 
-        Log.i(TAG, "HOME: RESUMED");
+        Log.i(TAG, "HOME:RESUMED");
         Log.i(TAG, "State = " + BLTManager.sharedInstance().getState());
         Log.i(TAG, "BT Enabled = " + BLTManager.sharedInstance().isBluetoothEnabled());
         Log.i(TAG, "Adverstising = " + mAdvertising);

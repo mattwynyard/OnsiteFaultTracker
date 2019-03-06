@@ -61,7 +61,7 @@ public class OnsiteApplication extends Application {
                     public void uncaughtException(Thread thread, Throwable e) {
                         System.out.println("AppCrash");
                         e.printStackTrace();
-                        BLTManager.sharedInstance().sendPoolMessage("E:CRASH");
+                        BLTManager.sharedInstance().sendPoolMessage("E:CRASH,");
                         BusNotificationUtil.sharedInstance().
                                 postNotification(new BLTStopRecordingEvent());
                         System.exit(1);
@@ -73,7 +73,7 @@ public class OnsiteApplication extends Application {
     public void onLowMemory() {
         super.onLowMemory();
         Log.i(TAG, "APP: Low Memory");
-        BLTManager.sharedInstance().sendPoolMessage("E:Low Phone Memory");
+        BLTManager.sharedInstance().sendPoolMessage("E:Low Phone Memory,");
         BusNotificationUtil.sharedInstance().postNotification(new TCPStopRecordingEvent());
 
     }
