@@ -49,6 +49,7 @@ import com.onsite.onsitefaulttracker.util.ThreadUtil;
 
 import static android.os.HardwarePropertiesManager.DEVICE_TEMPERATURE_CPU;
 import static android.os.HardwarePropertiesManager.TEMPERATURE_CURRENT;
+import static java.lang.Thread.MAX_PRIORITY;
 
 /**
  * Bluetooth Classic Device manager,
@@ -343,10 +344,11 @@ public class BLTManager extends Activity {
         };
         mThreadPoolExecutor.execute(task);
         //Log.d(TAG, "TASK COUNT: " + mThreadPoolExecutor.getTaskCount());
-        Log.d(TAG, "Thread count: " + mThreadPoolExecutor.getActiveCount());
+        //Log.d(TAG, "Thread count: " + mThreadPoolExecutor.getActiveCount());
         Log.d(TAG, "Outstanding tasks: " + (mThreadPoolExecutor.getTaskCount()
                 - mThreadPoolExecutor.getCompletedTaskCount()));
-        Log.d(TAG, "Queue size: " + mThreadPoolExecutor.getQueue().size());
+        Log.d(TAG, "Pool Info: " + mThreadPoolExecutor.toString());
+
         //mThreadPool.submit(task);
     }
 
@@ -369,7 +371,7 @@ public class BLTManager extends Activity {
 //     * Send the recording status
 //     */
     private void sendRecordingStatus() {
-        sendMessage(mRecording ? "RECORDING," : "NOTRECORDING,");
+        sendPoolMessage(mRecording ? "RECORDING," : "NOTRECORDING,");
 //        Runnable task = new Runnable() {
 //            @Override
 //            public void run() {
@@ -447,13 +449,13 @@ public class BLTManager extends Activity {
                     try {
                         mWriterOut = new PrintWriter(mSocket.getOutputStream(), true);
                         //mWriterOut.println("CONNECTED");
-                        sendMessage("CONNECTED,");
+                        sendPoolMessage("CONNECTED,");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                     mReadThread = new Thread(readFromClient);
                     mReadThread.setName("ReadThread");
-                    mReadThread.setPriority(Thread.MAX_PRIORITY);
+                    mReadThread.setPriority(MAX_PRIORITY);
                     mReadThread.start();
                 }
             }

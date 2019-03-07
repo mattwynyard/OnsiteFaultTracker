@@ -203,7 +203,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
 //        }
         Log.i(TAG, "RECORD:DETACHED");
         //BLTManager.sharedInstance().sendMessage("RECORD:DETACHED");
-        BLTManager.sharedInstance().sendPoolMessage("RECORD:DETACHED,");
+        //BLTManager.sharedInstance().sendPoolMessage("RECORD:DETACHED,");
 
     }
 
@@ -236,7 +236,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         }
         // Register to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().register(this);
-        BLTManager.sharedInstance().sendMessage("RECORD:RESUMED,");
+        //BLTManager.sharedInstance().sendMessage("RECORD:RESUMED,");
         //TcpConnection.getSharedInstance().sendMessage("C: RESUMED");
 
 
@@ -262,7 +262,7 @@ public class RecordFragment extends BaseFragment implements CameraUtil.CameraCon
         BLTManager.sharedInstance().setRecording(false);
         // Unregister to receive bluetooth notifications
         BusNotificationUtil.sharedInstance().getBus().unregister(this);
-        BLTManager.sharedInstance().sendPoolMessage("RECORD:PAUSED,");
+        //BLTManager.sharedInstance().sendPoolMessage("RECORD:PAUSED,");
         //TcpConnection.getSharedInstance().sendMessage("C: PAUSED");
         getActivity().finish(); //kills paused frame - new frame created when records resumes
     }

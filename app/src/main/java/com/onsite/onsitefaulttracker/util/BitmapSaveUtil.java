@@ -330,16 +330,21 @@ public class BitmapSaveUtil {
         return message;
     }
 
+//    private void sendMessage(final String message ) {
+//        Runnable messgaeSend = new Runnable() {
+//            @Override
+//            public void run() {
+//                BLTManager.sharedInstance().sendPoolMessage(message);
+//            }
+//        };
+//        mThreadPool.execute(messgaeSend);
+//
+//    }
     private void sendMessage(final String message ) {
-        Runnable messgaeSend = new Runnable() {
-            @Override
-            public void run() {
-                BLTManager.sharedInstance().sendPoolMessage(message);
-            }
-        };
-        mThreadPool.execute(messgaeSend);
-
+        BLTManager.sharedInstance().sendPoolMessage(message);
     }
+
+
 
     private String convertDate(long timestamp) {
         Calendar cal = Calendar.getInstance();
